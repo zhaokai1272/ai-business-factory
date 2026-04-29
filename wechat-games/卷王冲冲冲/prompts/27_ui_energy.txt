@@ -1,0 +1,1 @@
+UI icon: '体力' (stamina/energy). A battery icon shaped like a coffee cup, filling with brown liquid. Creative design. 64x64. Transparent.

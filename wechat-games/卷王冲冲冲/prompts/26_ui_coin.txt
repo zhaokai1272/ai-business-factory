@@ -1,0 +1,1 @@
+UI icon: in-game currency '工资' (salary coin). A golden yuan coin with '薪' character embossed. Game HUD element. 64x64. Flat vector with subtle 3D bevel. Transparent.

@@ -1,0 +1,1 @@
+Pause menu panel. Darkened overlay with '暂停摸鱼' text, resume/restart/quit buttons. Frosted glass effect. 750x400.

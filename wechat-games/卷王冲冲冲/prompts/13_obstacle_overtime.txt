@@ -1,0 +1,1 @@
+Obstacle sprite: '加班通知' (overtime notice). A towering stack of documents with red stamps flying down like a waterfall. Neon 'OT' sign blinking. Papers swirling in vortex. Transparent. 256x512 vertical obstacle.

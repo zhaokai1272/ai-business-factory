@@ -1,0 +1,1 @@
+Power-up sprite: '下班倒计时' (clock-out countdown). A pair of winged running shoes with afterburner flames, clock face on the heel showing 5:59 PM. Transparent. 128x128.

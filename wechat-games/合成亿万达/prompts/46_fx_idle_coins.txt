@@ -1,0 +1,1 @@
+Visual effect: idle coin generation. Coins materializing and floating upward from cards on board. Satisfying loop. 256x256. 4-frame spritesheet.

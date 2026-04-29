@@ -1,0 +1,1 @@
+Visual effect: obstacle hit explosion. Comic-style 'BAM!' burst, papers flying, coffee splashing. Impact stars. 256x256. 4-frame sprite sheet.

@@ -1,0 +1,1 @@
+Top HUD panel. Semi-transparent dark bar with score, coins, energy indicators. Gradient from dark to transparent. 750x120. Game UI element.

@@ -1,0 +1,142 @@
+/**
+ * ResultScene.js — 卷王冲冲冲 结算场景
+ * 展示分数、评价、复活/分享选项
+ */
+
+class ResultScene {
+  constructor(game) {
+    this.game = game;
+    this.score = 0;
+    this.rank = '';
+    this.showRevive = true;
+  }
+
+  enter(params = {}) {
+    this.score = params.score || 0;
+    this.showRevive = params.canRevive !== false;
+    this._calcRank();
+  }
+
+  /** 计算段位评价 */
+  _calcRank() {
+    const s = this.score;
+    if (s >= 10000) this.rank = '👑 资本本资';
+    else if (s >= 5000) this.rank = '💼 总监';
+    else if (s >= 2000) this.rank = '👔 经理';
+    else if (s >= 1000) this.rank = '🧑‍💻 骨干';
+    else if (s >= 500) this.rank = '📋 专员';
+    else if (s >= 200) this.rank = '🎓 实习生';
+    else this.rank = '📄 简历待投';
+  }
+
+  render(ctx) {
+    const w = this.game.canvasWidth, h = this.game.canvasHeight;
+    const cx = w / 2;
+
+    // 背景
+    ctx.fillStyle = '#2C2C54';
+    ctx.fillRect(0, 0, w, h);
+
+    // 标题
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('💼 今日战绩', cx, h * 0.15);
+
+    // 段位
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillStyle = '#FFD700';
+    ctx.fillText(this.rank, cx, h * 0.25);
+
+    // 分数
+    ctx.font = '48px bold sans-serif';
+    ctx.fillStyle = '#FFF';
+    ctx.fillText(`${this.score}`, cx, h * 0.38);
+
+    // 统计
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = '#AAA';
+    const dist = this.score; // 距离=分数
+    ctx.fillText(`奔跑距离: ${dist}m  |  高速: ${Math.floor(Math.random() * 20 + 20)}km/h`, cx, h * 0.48);
+
+    // 梗图文案
+    const jokes = [
+      '🏃 "只要我跑得够快，DDL就追不上我"',
+      '☕ "咖啡续命中，勿扰"',
+      '📋 "今天的会议，明天的需求"',
+      '✂️ "N+1？不存在的，我N+无限续杯"'
+    ];
+    ctx.fillStyle = '#FF6B6B';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(jokes[Math.floor(Math.random() * jokes.length)], cx, h * 0.56);
+
+    // 按钮区域
+    const btnW = w * 0.7, btnH = 50, btnX = cx - btnW / 2;
+    
+    // 复活按钮
+    if (this.showRevive) {
+      ctx.fillStyle = '#FF6B6B';
+      this._drawRoundRect(ctx, btnX, h * 0.65, btnW, btnH, 12);
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText('📺 看广告复活', cx, h * 0.65 + 32);
+    }
+
+    // 再来一局
+    ctx.fillStyle = '#4834D4';
+    this._drawRoundRect(ctx, btnX, h * 0.75, btnW, btnH, 12);
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('🔄 再来一局', cx, h * 0.75 + 32);
+
+    // 分享按钮
+    ctx.fillStyle = '#2ED573';
+    this._drawRoundRect(ctx, btnX, h * 0.85, btnW, btnH, 12);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('📤 分享战绩', cx, h * 0.85 + 32);
+  }
+
+  _drawRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  handleTouch(e) {
+    if (e.type !== 'touchstart') return;
+    const { clientX, clientY } = e.touches[0];
+    const w = this.game.canvasWidth, h = this.game.canvasHeight;
+    const cx = w / 2, btnW = w * 0.7, btnX = cx - btnW / 2;
+
+    // 复活按钮
+    if (this.showRevive && clientY > h * 0.65 && clientY < h * 0.65 + 50) {
+      console.log('[Result] 看广告复活');
+      // 微信激励视频广告接入点
+      this.game.switchScene('game');
+      return;
+    }
+    // 再来一局
+    if (clientY > h * 0.75 && clientY < h * 0.75 + 50) {
+      this.game.switchScene('game');
+      return;
+    }
+    // 分享
+    if (clientY > h * 0.85 && clientY < h * 0.85 + 50) {
+      console.log('[Result] 分享战绩');
+      // 微信分享API接入点
+      this.game.switchScene('menu');
+      return;
+    }
+  }
+}
+
+module.exports = ResultScene;

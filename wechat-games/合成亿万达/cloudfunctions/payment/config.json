@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "openapi": [
+      "wxpay.orderQuery"
+    ]
+  },
+  "timeout": 15,
+  "envVariables": {},
+  "triggers": []
+}

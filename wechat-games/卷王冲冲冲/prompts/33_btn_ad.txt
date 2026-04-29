@@ -1,0 +1,1 @@
+UI button: '看广告复活' (Watch Ad to Revive). Button with play triangle icon and heart, green gradient. 256x128.

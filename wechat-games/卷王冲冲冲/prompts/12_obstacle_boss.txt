@@ -1,0 +1,1 @@
+Obstacle sprite: '老板突袭' (boss ambush). A cartoonishly large boss figure with glowing red eyes, pointing finger, suit with shoulder pads exaggerated 3x. Intimidating but humorous. Speech bubble with '进度怎么样了？'. Transparent. 512x256.

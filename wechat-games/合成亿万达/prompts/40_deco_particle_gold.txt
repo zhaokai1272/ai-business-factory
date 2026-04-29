@@ -1,0 +1,1 @@
+Particle effect: gold coin sparkle. Small golden sparkle particles for merge effects and idle earnings display. Particle system spritesheet. 128x128. 8 small sparkle variants.

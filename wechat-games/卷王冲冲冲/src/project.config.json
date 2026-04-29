@@ -1,0 +1,13 @@
+{
+  "appid": "wx3bffbc31853d2140",
+  "projectname": "卷王冲冲冲",
+  "description": "微信小游戏 - 卷王冲冲冲",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": false,
+    "minified": false
+  },
+  "compileType": "game",
+  "condition": {}
+}

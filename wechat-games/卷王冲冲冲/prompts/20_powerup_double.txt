@@ -1,0 +1,1 @@
+Power-up sprite: '双倍工资' (double pay). A 'x2' icon with golden coins orbiting around it, glowing effect. Rich gold and yellow palette. Transparent. 128x128.

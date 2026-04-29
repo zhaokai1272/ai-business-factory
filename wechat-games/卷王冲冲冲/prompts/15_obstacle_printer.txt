@@ -1,0 +1,1 @@
+Obstacle sprite: '打印机故障' (printer jam). A cartoon office printer spewing paper everywhere, with red error light blinking, smoke coming out. Papers swirling in chaotic pattern. Transparent. 384x256.

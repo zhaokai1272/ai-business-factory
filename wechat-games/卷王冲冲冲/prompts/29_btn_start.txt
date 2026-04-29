@@ -1,0 +1,1 @@
+UI button: '开始摸鱼' (Start Slacking). Large CTA button with playful gradient (orange to pink), bold Chinese text. 512x128. Two states: idle and pressed. Transparent sprite sheet.

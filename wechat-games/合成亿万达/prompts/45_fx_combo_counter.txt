@@ -1,0 +1,1 @@
+Visual effect: combo counter display. 'x3 COMBO!' etc. text effects, growing more intense with higher combos. Golden/rainbow text with particle burst. Set of 6 combo levels. Each 256x128.

@@ -1,0 +1,1 @@
+Sell card button. '出售' with trash/bin icon. Red accent, warning color. 128x96. Two states.

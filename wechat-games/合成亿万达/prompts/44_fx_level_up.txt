@@ -1,0 +1,1 @@
+Visual effect: board level up. Golden light ascending from bottom to top of screen, 'LEVEL UP!' text effect, stars rising. 750x1334. 4-frame spritesheet for overlay.

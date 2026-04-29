@@ -1,0 +1,1 @@
+UI button: '摸鱼商城' (Slacker Shop). Shop button with shopping bag icon, purple-pink gradient. 128x128. Two states.

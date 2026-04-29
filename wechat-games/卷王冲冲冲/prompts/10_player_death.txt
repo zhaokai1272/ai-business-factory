@@ -1,0 +1,1 @@
+Character sprite: death/hit animation. Worker flying backward, papers exploding, coffee cup mid-air, glasses flying off, x_x eyes. Comic impact lines radiating from center. Same style. Transparent. 512x512.

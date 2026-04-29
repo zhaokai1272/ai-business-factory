@@ -1,0 +1,1 @@
+Visual effect: level up / rank promotion. Golden light pillar from above, certificate floating down, '晋升!' text effect. 512x512. 4-frame sheet.

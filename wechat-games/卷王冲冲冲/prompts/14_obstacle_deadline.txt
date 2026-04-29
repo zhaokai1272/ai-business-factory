@@ -1,0 +1,1 @@
+Obstacle sprite: 'Deadline倒计时' (deadline countdown). A giant ticking clock with red digital display counting down, alarm bells ringing. Clock face has angry expression. Transparent. 256x256.

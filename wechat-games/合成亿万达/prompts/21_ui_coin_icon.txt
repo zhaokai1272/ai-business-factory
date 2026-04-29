@@ -1,0 +1,1 @@
+UI element: coin currency icon. A shiny gold coin with '¥' symbol embossed, slight 3D bevel effect, small sparkle highlight. Game HUD element. 64x64. Transparent.

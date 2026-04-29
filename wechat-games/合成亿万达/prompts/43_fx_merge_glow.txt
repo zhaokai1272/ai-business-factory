@@ -1,0 +1,1 @@
+Visual effect: card merge glow. Concentric golden rings expanding from merge point, fading outward. Ethereal, satisfying. 256x256. 4-frame spritesheet.

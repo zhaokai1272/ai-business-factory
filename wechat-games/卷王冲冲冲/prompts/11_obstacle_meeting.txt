@@ -1,0 +1,1 @@
+Obstacle sprite: '紧急会议' (emergency meeting). A giant conference table materializing from the ground with glowing red 'URGENT' hologram above it. Conference chairs spinning. Office equipment scattered. Intimidating but cartoonish. Transparent background. 512x256 horizontal obstacle.

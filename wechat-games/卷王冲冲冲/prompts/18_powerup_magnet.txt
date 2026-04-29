@@ -1,0 +1,1 @@
+Power-up sprite: '年终奖磁铁' (bonus magnet). A horseshoe magnet with Chinese yuan symbol, attracting gold coins. Magnetic field lines visible. Golden colors. Transparent. 128x128.

@@ -1,0 +1,1 @@
+Buy card button. '购买卡片' with coin cost display. Green gradient button with satisfying press animation. 256x96. Two states.

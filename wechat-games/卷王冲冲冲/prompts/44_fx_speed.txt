@@ -1,0 +1,1 @@
+Visual effect: speed boost trail. Orange-red flame trail with motion blur, afterburner effect. Particle system compatible. 256x64 sprite sheet (4 frames). Transparent.

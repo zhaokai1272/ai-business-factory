@@ -1,0 +1,1 @@
+UI button: '合成' (merge) button. A large satisfying button with golden gradient, slight 3D bevel, Chinese characters in bold. Idle and pressed states. Pleasant tactile feel. 256x128. Transparent.

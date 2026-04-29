@@ -1,0 +1,1 @@
+Merge animation effect: two cards combining. Golden light burst, coin particles scattering outward, 'POP!' energy ring expanding. 4-frame sprite sheet for animation. Transparent. 512x512.

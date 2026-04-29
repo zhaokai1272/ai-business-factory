@@ -1,0 +1,34 @@
+{
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "regions": ["hkg1"],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_KEY": "@supabase-service-key",
+    "DEEPSEEK_API_KEY": "@deepseek-api-key",
+    "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN": "@paddle-client-token",
+    "PADDLE_API_KEY": "@paddle-api-key",
+    "PADDLE_WEBHOOK_SECRET": "@paddle-webhook-secret",
+    "PADDLE_ENV": "sandbox"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/payment/webhook",
+      "destination": "/api/payment/webhook"
+    }
+  ]
+}

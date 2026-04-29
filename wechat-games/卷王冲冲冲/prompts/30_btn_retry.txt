@@ -1,0 +1,1 @@
+UI button: '再卷一次' (Hustle Again). Motivating button, red-orange gradient, fist bump icon. 256x128. Two states.

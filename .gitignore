@@ -1,0 +1,34 @@
+# WeChat Mini Game
+miniprogram_npm/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Cloud function node_modules (installed on deploy)
+cloudfunctions/*/node_modules/
+
+# Secrets / Env
+.env
+.env.local
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp
+tmp/
+temp/

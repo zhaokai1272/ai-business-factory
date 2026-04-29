@@ -1,0 +1,1 @@
+Visual effect: shield aura. Golden translucent bubble around character, hexagonal grid pattern, shimmering. 256x256. Single frame + alpha.

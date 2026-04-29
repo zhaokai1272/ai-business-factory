@@ -1,0 +1,1 @@
+Power-up sprite: '请假条护盾' (leave request shield). A glowing golden shield made from a leave request form with official red stamp. Protective aura. Transparent. 128x128.

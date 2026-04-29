@@ -1,0 +1,1 @@
+Top HUD panel for merge game. Semi-transparent dark gradient bar showing coins, gems, energy. Elegant gold trim. 750x100. Flat vector. Transparent.

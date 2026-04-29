@@ -1,0 +1,1 @@
+UI button: '商店' (shop) button. A button with shopping cart icon and red notification badge. Gold trim. Two states. 128x128. Transparent.
