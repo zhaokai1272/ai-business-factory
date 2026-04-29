@@ -172,6 +172,7 @@ function getInsight(allWords, excludeWords) {
 module.exports = {
   WORD_DICT,
   CHAR_POOL,
+  IDIOMS_200,
   findWordsInGrid,
   getHint,
   getInsight
