@@ -18,36 +18,36 @@ class MenuScene extends Scene {
     // 清空按钮列表，重新构建
     this._buttons = [];
 
-    // "开始游戏"按钮 — 主CTA
+    // "开始游戏"按钮 — 主CTA，居中 390 屏宽
     this._buttons.push({
       id: 'start',
-      x: dw(375 - 200),     // 居中：375是设计稿中心
-      y: dh(600),
-      w: dw(400),
+      x: dw(35),
+      y: dh(580),
+      w: dw(320),
       h: dh(88),
       text: '开始游戏',
       color: '#FF6B35',     // 暖橙色
       action: () => this._onStartGame()
     });
 
-    // "商店"按钮
+    // "商店"按钮 — 左下
     this._buttons.push({
       id: 'shop',
-      x: dw(80),
+      x: dw(30),
       y: dh(740),
-      w: dw(260),
+      w: dw(160),
       h: dh(72),
       text: '🏪 商店',
       color: '#4ECDC4',     // 青色
       action: () => this._onOpenShop()
     });
 
-    // "排行榜"按钮
+    // "排行榜"按钮 — 右下，与商店对称
     this._buttons.push({
       id: 'rank',
-      x: dw(410),
+      x: dw(200),
       y: dh(740),
-      w: dw(260),
+      w: dw(160),
       h: dh(72),
       text: '🏆 排行',
       color: '#FFE66D',     // 金色
@@ -83,8 +83,8 @@ class MenuScene extends Scene {
     // === 装饰星星（背景点缀） ===
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     const stars = [
-      [100, 120], [650, 100], [200, 350], [550, 280],
-      [80, 500], [670, 450], [300, 180], [500, 400]
+      [40, 100], [350, 80], [80, 300], [310, 250],
+      [50, 500], [340, 450], [180, 150], [200, 380]
     ];
     stars.forEach(([sx, sy]) => {
       ctx.beginPath();
@@ -118,17 +118,17 @@ class MenuScene extends Scene {
     // === 资源栏：金币/钻石/体力 ===
     const resourceY = dh(420);
     const resources = [
-      { icon: '🪙', value: this.game.gameData.coins, x: dw(120) },
-      { icon: '💎', value: this.game.gameData.diamonds, x: dw(375) },
-      { icon: '⚡', value: this.game.gameData.energy, x: dw(630) }
+      { icon: '🪙', value: this.game.gameData.coins, x: dw(85) },
+      { icon: '💎', value: this.game.gameData.diamonds, x: dw(195) },
+      { icon: '⚡', value: this.game.gameData.energy, x: dw(305) }
     ];
     ctx.font = `${dw(24)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     resources.forEach(({ icon, value, x }) => {
-      // 半透明背景卡片
+      // 半透明背景卡片（缩小以适应三等分布局）
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      this._roundRect(ctx, x - dw(70), resourceY - dh(22), dw(140), dh(44), dw(12));
+      this._roundRect(ctx, x - dw(50), resourceY - dh(22), dw(100), dh(44), dw(12));
       ctx.fill();
       // 图标 + 数值
       ctx.fillStyle = '#FFFFFF';
@@ -144,7 +144,7 @@ class MenuScene extends Scene {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.font = `${dw(20)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(`关卡 ${this.game.gameData.level}  |  最高分 ${this.game.gameData.bestScore}`, screenWidth / 2, dh(880));
+    ctx.fillText(`关卡 ${this.game.gameData.level}  |  最高分 ${this.game.gameData.bestScore}`, screenWidth / 2, dh(820));
   }
 
   /**
