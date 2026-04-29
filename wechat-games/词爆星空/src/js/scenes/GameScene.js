@@ -87,6 +87,15 @@ class GameScene extends Scene {
       }
     }
 
+    // 打乱每行4个字的顺序（玩家需要自行排列成正确成语）
+    for (let r = 0; r < rows; r++) {
+      const rowCards = this._cards.filter(c => c.row === r);
+      const shuffledCols = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+      rowCards.forEach((card, i) => { card.col = shuffledCols[i]; });
+    }
+    // 按行列重新排序 cards 数组
+    this._cards.sort((a, b) => a.row * 100 + a.col - (b.row * 100 + b.col));
+
     // 弹入动画
     this._cardAnimScale = new Array(rows * cols).fill(0).map((_, i) => ({
       progress: 0,
@@ -150,17 +159,29 @@ class GameScene extends Scene {
       found: false
     };
 
-    // 更新对应字卡
-    for (let c = 0; c < cols; c++) {
-      const cardIdx = rowIdx * cols + c;
-      this._cards[cardIdx].char = newWord[c];
-      this._cards[cardIdx].idiomIdx = rowIdx;
-      // 重置弹入动画
+    // 更新对应字卡：先重置为顺序列，赋字，再打乱
+    const cols2 = GAME_CONFIG.gridCols;
+    const rowCards = this._cards.filter(c => c.row === rowIdx);
+    // 重置列为顺序 0,1,2,3 并赋字
+    rowCards.forEach((card, i) => {
+      card.col = i;
+      card.char = newWord[i];
+      card.idiomIdx = rowIdx;
+    });
+
+    // 打乱该行的列顺序
+    const shuffledCols = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    rowCards.forEach((card, i) => { card.col = shuffledCols[i]; });
+    this._cards.sort((a, b) => a.row * 100 + a.col - (b.row * 100 + b.col));
+
+    // 重置弹入动画
+    rowCards.forEach((_, i) => {
+      const cardIdx = this._cards.indexOf(rowCards[i]);
       this._cardAnimScale[cardIdx] = {
         progress: 0,
-        delay: c * 0.05
+        delay: i * 0.05
       };
-    }
+    });
 
     console.log(`[游戏] 第${rowIdx + 1}行已刷新: "${newWord}"`);
   }
@@ -641,18 +662,20 @@ class GameScene extends Scene {
     this.game.gameData.diamonds--;
     this._hintCooldown = this.game.GAME_CONFIG.hintCooldown;
 
-    // 自动选中该行的前两个字
+    // 自动选中该行的前两个字（在打乱的网格中按字符匹配）
     this._clearSelection();
-    const { GAME_CONFIG } = this.game;
-    const cols = GAME_CONFIG.gridCols;
+    const rowIdx = unfound.cells[0].row;
+    const rowCards = this._cards.filter(c => c.row === rowIdx);
     unfound.cells.slice(0, 2).forEach((cell, i) => {
-      const cardIdx = cell.row * cols + cell.col;
-      this._cards[cardIdx].selected = true;
-      this._cards[cardIdx].selectOrder = i;
+      const card = rowCards.find(c => c.char === cell.char && !c.selected);
+      if (card) {
+        card.selected = true;
+        card.selectOrder = i;
+      }
     });
 
-    wx.showToast({ title: `提示: 第${unfound.cells[0].row + 1}行`, icon: 'none', duration: 1500 });
-    console.log(`[道具] 提示: 第${unfound.cells[0].row + 1}行 "${unfound.word}"`);
+    wx.showToast({ title: `提示: 第${rowIdx + 1}行`, icon: 'none', duration: 1500 });
+    console.log(`[道具] 提示: 第${rowIdx + 1}行 "${unfound.word}"`);
   }
 
   /**
@@ -686,13 +709,15 @@ class GameScene extends Scene {
     this.game.gameData.diamonds -= 3;
     this._clearSelection();
 
-    // 自动全选并触发正确
-    const { GAME_CONFIG } = this.game;
-    const cols = GAME_CONFIG.gridCols;
+    // 自动全选（在打乱的网格中按字符匹配）并触发正确
+    const rowIdx = unfound.cells[0].row;
+    const rowCards = this._cards.filter(c => c.row === rowIdx);
     unfound.cells.forEach((cell, i) => {
-      const cardIdx = cell.row * cols + cell.col;
-      this._cards[cardIdx].selected = true;
-      this._cards[cardIdx].selectOrder = i;
+      const card = rowCards.find(c => c.char === cell.char && !c.selected);
+      if (card) {
+        card.selected = true;
+        card.selectOrder = i;
+      }
     });
 
     // 直接触发校验
