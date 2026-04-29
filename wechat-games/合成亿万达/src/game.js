@@ -60,7 +60,7 @@ function switchScene(name, params = {}) {
   console.log(`[场景] → ${name}`);
 }
 
-const game = { ctx, canvas, canvasWidth, canvasHeight, switchScene, gameData };
+const game = { ctx, canvas, canvasWidth, canvasHeight, width: canvasWidth, height: canvasHeight, switchScene, gameData };
 
 // ==================== 触摸事件 ====================
 wx.onTouchStart((e) => {

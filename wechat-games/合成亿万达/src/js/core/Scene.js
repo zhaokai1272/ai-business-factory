@@ -20,11 +20,21 @@ class Scene {
     this.active = true;
   }
 
+  /** game.js 兼容：调用 onEnter */
+  enter(data) {
+    this.onEnter(data);
+  }
+
   /**
    * 场景退出时调用
    */
   onExit() {
     this.active = false;
+  }
+
+  /** game.js 兼容：调用 onExit */
+  exit() {
+    this.onExit();
   }
 
   /**
@@ -66,8 +76,8 @@ class Scene {
   /**
    * 场景切换便捷方法
    */
-  switchTo(SceneClass, data) {
-    this.game.switchScene(SceneClass, data);
+  switchTo(sceneName, data) {
+    this.game.switchScene(sceneName, data);
   }
 
   /**

@@ -62,7 +62,7 @@ function switchScene(name, params = {}) {
 }
 
 // game对象（注入给所有Scene）
-const game = { ctx, canvas, canvasWidth, canvasHeight, switchScene, gameData };
+const game = { ctx, canvas, canvasWidth, canvasHeight, width: canvasWidth, height: canvasHeight, switchScene, gameData };
 
 // ==================== 触摸事件 ====================
 wx.onTouchStart((e) => {

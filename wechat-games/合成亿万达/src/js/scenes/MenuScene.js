@@ -286,7 +286,7 @@ class MenuScene extends Scene {
   }
 
   _onPlay() {
-    this.switchTo(require('./GameScene'));
+    this.game.switchScene('game');
   }
 
   _onShop() {
