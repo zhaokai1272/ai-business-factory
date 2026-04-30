@@ -198,12 +198,30 @@ class Player {
     }
   }
 
-  /** 高质量角色绘制 */
+  /** 角色绘制(图片优先) */
   _drawCharacter(ctx, cx, cy, w, h, isGhost) {
-    const alpha = isGhost ? 0.4 : 1;
-    ctx.save();
-    if (isGhost) ctx.globalAlpha = 0.35;
+    if (isGhost) { ctx.globalAlpha = 0.25; this._drawCanvasChar(ctx,cx,cy,w,h); ctx.globalAlpha = 1; return; }
 
+    // 尝试图片
+    const IMG = this.game ? this.game.imageManager : null;
+    let imgKey = '05_player_run1.png';
+    if (this.switching) imgKey = '08_player_jump.png';
+    else if (this.invincible && Math.floor(Date.now()/200)%2) imgKey = '10_player_death.png';
+    else if (this.animFrame === 0) imgKey = '05_player_run1.png';
+    else if (this.animFrame === 1) imgKey = '06_player_run2.png';
+    else imgKey = '07_player_run3.png';
+
+    const img = IMG ? IMG.get(imgKey) : null;
+    if (img) {
+      ctx.drawImage(img, cx-w*0.9, cy-h*0.85, w*1.8, h*1.8);
+    } else {
+      this._drawCanvasChar(ctx, cx, cy, w, h);
+    }
+  }
+
+  /** Canvas回退绘制 */
+  _drawCanvasChar(ctx, cx, cy, w, h) {
+    ctx.save();
     // 阴影
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath(); ctx.ellipse(cx, cy + h*0.45, w*0.35, h*0.08, 0, 0, Math.PI*2); ctx.fill();
@@ -279,9 +297,8 @@ class Player {
 
     // 黑眼圈(加班人特征)
     ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath(); ctx.ellipse(cx-w*0.08, cy-h*0.34, w*0.05, h*0.03, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx+w*0.08, cy-h*0.34, w*0.05, h*0.03, 0, 0, Math.PI*2); ctx.fill();
-
+    ctx.beginPath(); ctx.ellipse(cx-w*0.08,cy-h*0.34,w*0.05,h*0.03,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+w*0.08,cy-h*0.34,w*0.05,h*0.03,0,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
 

@@ -19,8 +19,7 @@ class GameScene {
     this.combo = 0;
     this.lives = 3;
     this.state = 'playing';
-    this.bgOffset = 0;
-    this._backBtn = { x: 8, y: 6, w: 56, h: 30 };
+        this._backBtn = { x: 8, y: 6, w: 56, h: 30 };
     this._flashTimer = 0;       // 受击闪屏
   }
 
@@ -43,8 +42,7 @@ class GameScene {
     this.combo = 0;
     this.lives = this.game.gameData.lives || 3;
     this.state = 'playing';
-    this.bgOffset = 0;
-  }
+      }
 
   update(dt) {
     if (this.state !== 'playing') return;
@@ -54,7 +52,7 @@ class GameScene {
     this.distance += this.speed * dt;
 
     // 背景滚动（向下 = 画面向上）
-    this.bgOffset = (this.bgOffset + 40 * dt) % this.game.canvasHeight;
+    // 背景静态不滚动
 
     // 玩家更新
     this.player.update(dt);
@@ -109,17 +107,19 @@ class GameScene {
     }
   }
 
-  /** 竖版滚动背景 */
+  /** 静态背景 (根据速度切换场景) */
   _drawBackground(ctx) {
     const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    const imgMgr = this.game.imageManager;
-    const bgImg = imgMgr ? imgMgr.get('21_bg_office_day.png') : null;
+    const IMG = this.game.imageManager;
+    // 根据速度切换背景: <200=办公室, <300=地铁, <400=大厅, >=400=天台
+    let bgKey = '21_bg_office_day.png';
+    if (this.speed > 350) bgKey = '25_bg_desk.png';
+    else if (this.speed > 250) bgKey = '23_bg_subway.png';
+    else if (this.speed > 180) bgKey = '22_bg_office_night.png';
+    const bgImg = IMG ? IMG.get(bgKey) : null;
 
-    if (bgImg && bgImg.complete && bgImg.width > 0) {
-      // 两张图拼接无缝滚动
-      const y = -this.bgOffset;
-      ctx.drawImage(bgImg, 0, y, w, h);
-      ctx.drawImage(bgImg, 0, y + h, w, h);
+    if (bgImg) {
+      ctx.drawImage(bgImg, 0, 0, w, h);
     } else {
       // 纯色回退
       const grad = ctx.createLinearGradient(0, 0, 0, h);
@@ -146,39 +146,44 @@ class GameScene {
 
   _drawHUD(ctx) {
     const w = this.game.canvasWidth;
+    const IMG = this.game.imageManager;
+
+    // 顶部面板背景
+    const panel = IMG ? IMG.get('34_panel_top.png') : null;
+    if (panel) {
+      ctx.drawImage(panel, 0, 0, w, 56);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, w, 56);
+    }
+
     // 返回按钮
     const bb = this._backBtn;
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     this._drawRoundRect(ctx, bb.x, bb.y, bb.w, bb.h, 6);
     ctx.fillStyle = '#FFF';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('← 返回', bb.x + bb.w/2, bb.y + bb.h/2 + 4);
+    ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('← 返回', bb.x+bb.w/2, bb.y+bb.h/2+4);
+
+    // 金币图标+数值
+    const coinIcon = IMG ? IMG.get('26_ui_coin.png') : null;
+    if (coinIcon) ctx.drawImage(coinIcon, w*0.25, 2, 24, 24);
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`${this.game.gameData.coins||0}`, w*0.25+28, 20);
+
+    // 能量图标
+    const energyIcon = IMG ? IMG.get('27_ui_energy.png') : null;
+    if (energyIcon) ctx.drawImage(energyIcon, w*0.52, 2, 24, 24);
+    ctx.fillStyle = '#FFF';
+    ctx.fillText(`${Math.floor(this.speed)}`, w*0.52+28, 20);
 
     // 分数
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${this.score}`, w/2, 32);
-
-    // 速度
-    ctx.font = '13px sans-serif';
-    ctx.fillStyle = '#FFD700';
-    ctx.fillText(`${Math.floor(this.speed)}km/h`, w/2, 50);
+    ctx.fillStyle = '#FFF'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`${this.score}`, w/2, 44);
 
     // 生命
-    ctx.textAlign = 'left';
-    ctx.font = '16px sans-serif';
-    ctx.fillStyle = '#FFF';
-    ctx.fillText(`❤️ x${this.lives}`, 12, 70);
-
-    // Combo
-    if (this.combo > 2) {
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText(`${this.combo}x`, w - 12, 70);
-    }
+    ctx.textAlign = 'left'; ctx.font = '13px sans-serif'; ctx.fillStyle = '#FFF';
+    ctx.fillText(`❤️x${this.lives} 连击:${this.combo}`, 10, 75);
   }
 
   _drawGameOver(ctx) {
