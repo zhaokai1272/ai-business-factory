@@ -2,6 +2,8 @@
  * 主菜单场景 - 游戏入口界面
  * 显示标题、打工人形象、开始按钮、金币/钻石、商店/排行榜入口
  */
+const Scene = require('../core/Scene');
+
 class MenuScene extends Scene {
   constructor(game) {
     super(game);
@@ -25,6 +27,23 @@ class MenuScene extends Scene {
 
     // === 背景 ===
     this.bgOffset = 0; // 背景滚动偏移
+    this._shopOpen = false;
+    this._shopTab = 'skins';  // skins|items
+    this._rankOpen = false;
+    this._rankData = [];
+    this._shopSkins = [
+      {id:'default',name:'格子衫程序员',price:0,owned:true,color:'#3498db'},
+      {id:'suit',name:'西装暴徒',price:500,owned:false,color:'#2c3e50'},
+      {id:'panda',name:'熊猫眼加班人',price:1000,owned:false,color:'#95a5a6'},
+      {id:'vacation',name:'摸鱼达人',price:1500,owned:false,color:'#e74c3c'},
+      {id:'genz',name:'00后整顿职场',price:2000,owned:false,color:'#9b59b6'},
+      {id:'boss',name:'老板本板',price:5000,owned:false,color:'#c0392b'},
+    ];
+    this._shopItems = [
+      {id:'shield',name:'护身符',price:100,desc:'开局无敌3秒'},
+      {id:'speed',name:'加速鞋',price:200,desc:'速度+30%'},
+      {id:'double',name:'双倍金币',price:300,desc:'金币x2'},
+    ];
   }
 
   /**
@@ -54,7 +73,7 @@ class MenuScene extends Scene {
         height: 40,
         text: '商店',
         color: '#f39c12',
-        action: () => this.showToast('商店功能开发中~'),
+        action: () => { this._shopOpen = true; this._shopTab = 'skins'; },
       },
       {
         id: 'rank',
@@ -64,7 +83,7 @@ class MenuScene extends Scene {
         height: 40,
         text: '排行',
         color: '#3498db',
-        action: () => this.showToast('排行榜功能开发中~'),
+        action: () => { this._rankOpen = true; this._loadRank(); },
       },
     ];
   }
@@ -156,6 +175,10 @@ class MenuScene extends Scene {
 
     // === 底部信息 ===
     this.renderFooter(ctx);
+
+    // === 弹窗（最上层） ===
+    if (this._shopOpen) this._renderShopPopup(ctx);
+    if (this._rankOpen) this._renderRankPopup(ctx);
   }
 
   /**
@@ -443,6 +466,10 @@ class MenuScene extends Scene {
     const tx = touch.clientX;
     const ty = touch.clientY;
 
+    // 弹窗关闭/交互
+    if (this._shopOpen) { this._handleShopTouch(tx, ty); return true; }
+    if (this._rankOpen) { this._rankOpen = false; return true; }
+
     // 检测按钮点击
     for (let i = 0; i < this.buttons.length; i++) {
       const btn = this.buttons[i];
@@ -459,6 +486,188 @@ class MenuScene extends Scene {
     return false;
   }
 }
+
+
+  /** 加载排行榜 */
+  _loadRank() {
+    this._rankData = [{name:'你',score:this.game.gameData.highScore||0,me:true}];
+    if (typeof wx !== 'undefined' && wx.cloud) {
+      try {
+        wx.cloud.callFunction({name:'leaderboard',data:{type:'top',limit:10}}).then(res => {
+          if (res.result && res.result.list) {
+            this._rankData = res.result.list.map((r,i) => ({
+              name: r.nickName || '玩家'+i, score: r.score, me: r._openid === 'self'
+            }));
+          }
+        }).catch(() => {});
+      } catch(e) {}
+    }
+  }
+
+  /** 商店触摸处理 */
+  _handleShopTouch(tx, ty) {
+    const w = this.canvasWidth, h = this.canvasHeight;
+    const popX = w * 0.1, popY = h * 0.08, popW = w * 0.8, popH = h * 0.7;
+    // Close button (X top-right)
+    if (tx > popX + popW - 40 && tx < popX + popW && ty > popY && ty < popY + 40) {
+      this._shopOpen = false; return;
+    }
+    // Tab buttons
+    const tabY = popY + 45;
+    if (ty > tabY && ty < tabY + 30) {
+      if (tx > popX + 10 && tx < popX + popW/2) this._shopTab = 'skins';
+      else if (tx > popX + popW/2 && tx < popX + popW - 10) this._shopTab = 'items';
+      return;
+    }
+    // Item rows
+    const items = this._shopTab === 'skins' ? this._shopSkins : this._shopItems;
+    const startY = tabY + 40, rowH = 55;
+    for (let i = 0; i < items.length; i++) {
+      const ry = startY + i * rowH;
+      if (ty > ry && ty < ry + rowH && tx > popX + 5 && tx < popX + popW - 5) {
+        this._buyItem(i); return;
+      }
+    }
+  }
+
+  /** 购买道具 */
+  _buyItem(idx) {
+    const items = this._shopTab === 'skins' ? this._shopSkins : this._shopItems;
+    const item = items[idx];
+    if (!item) return;
+    if (item.owned) return;
+    const gd = this.game.gameData;
+    if (gd.coins >= item.price) {
+      gd.coins -= item.price;
+      item.owned = true;
+      if (this._shopTab === 'skins') {
+        gd.activeSkin = item.id;
+        if (typeof wx !== 'undefined') wx.showToast({title:'购买成功！',icon:'success'});
+      } else {
+        gd[item.id + 'Count'] = (gd[item.id + 'Count'] || 0) + 1;
+        if (typeof wx !== 'undefined') wx.showToast({title:'获得 '+item.name,icon:'success'});
+      }
+    } else {
+      if (typeof wx !== 'undefined') wx.showToast({title:'金币不足',icon:'none'});
+    }
+  }
+
+  /** 渲染商店弹窗 */
+  _renderShopPopup(ctx) {
+    const w = this.canvasWidth, h = this.canvasHeight;
+    const popX = w * 0.1, popY = h * 0.08, popW = w * 0.8, popH = h * 0.7;
+
+    // Overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, w, h);
+
+    // Popup bg
+    ctx.fillStyle = 'rgba(30,30,60,0.95)';
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    this.drawRoundRect(popX, popY, popW, popH, 16, ctx);
+
+    // Title
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('商店', popX + popW/2, popY + 28);
+
+    // Close X
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('✕', popX + popW - 22, popY + 28);
+
+    // Tabs
+    const tabY = popY + 45;
+    ctx.fillStyle = this._shopTab === 'skins' ? '#e74c3c' : 'rgba(255,255,255,0.1)';
+    this.drawRoundRect(popX + 10, tabY, popW/2 - 15, 30, 8, ctx);
+    ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif';
+    ctx.fillText('皮肤', popX + popW/4, tabY + 20);
+
+    ctx.fillStyle = this._shopTab === 'items' ? '#e74c3c' : 'rgba(255,255,255,0.1)';
+    this.drawRoundRect(popX + popW/2 + 5, tabY, popW/2 - 15, 30, 8, ctx);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('道具', popX + popW * 0.75, tabY + 20);
+
+    // Items
+    const items = this._shopTab === 'skins' ? this._shopSkins : this._shopItems;
+    const startY = tabY + 40, rowH = 55;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i], ry = startY + i * rowH;
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      this.drawRoundRect(popX + 5, ry, popW - 10, rowH - 5, 8, ctx);
+      ctx.fillStyle = it.color || '#fff';
+      ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(it.name, popX + 15, ry + 20);
+      ctx.fillStyle = '#aaa'; ctx.font = '11px sans-serif';
+      ctx.fillText(it.desc || '', popX + 15, ry + 38);
+      ctx.textAlign = 'right';
+      if (it.owned) {
+        ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('已拥有', popX + popW - 15, ry + 28);
+      } else {
+        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('💰'+it.price, popX + popW - 15, ry + 28);
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+
+  /** 渲染排行榜弹窗 */
+  _renderRankPopup(ctx) {
+    const w = this.canvasWidth, h = this.canvasHeight;
+    const popX = w * 0.08, popY = h * 0.1, popW = w * 0.84, popH = h * 0.6;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = 'rgba(30,30,60,0.95)';
+    ctx.strokeStyle = '#3498db';
+    ctx.lineWidth = 2;
+    this.drawRoundRect(popX, popY, popW, popH, 16, ctx);
+
+    ctx.fillStyle = '#3498db';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆 排行榜', popX + popW/2, popY + 28);
+
+    const startY = popY + 50, rowH = 36;
+    for (let i = 0; i < Math.min(this._rankData.length, 10); i++) {
+      const r = this._rankData[i], ry = startY + i * rowH;
+      const medals = ['🥇','🥈','🥉'];
+      ctx.fillStyle = r.me ? 'rgba(231,76,60,0.2)' : 'rgba(255,255,255,0.03)';
+      this.drawRoundRect(popX + 5, ry, popW - 10, rowH - 3, 6, ctx);
+      ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText((medals[i] || (i+1+'.')) + ' ' + (r.name||'匿名'), popX + 15, ry + 22);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#FFD700'; ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(r.score + '分', popX + popW - 15, ry + 22);
+    }
+    ctx.textAlign = 'left';
+
+    // Tap to close hint
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('点击任意处关闭', popX + popW/2, popY + popH - 12);
+    ctx.textAlign = 'left';
+  }
+
+  /** Draw round rect helper */
+  drawRoundRect(x, y, w, h, r, ctx) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+    ctx.fill();
+  }
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {

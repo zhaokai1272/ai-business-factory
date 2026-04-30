@@ -32,7 +32,7 @@ class GameScene {
     const y1 = laneHeight * 1.5;
     const y2 = laneHeight * 2.5;
     this.player = new Player(this.game.canvasWidth * 0.15, y1, [y0, y1, y2], 1);
-    this.spawner = new Spawner();
+    this.spawner = new Spawner(this.game.canvasWidth, this.game.canvasHeight);
     this.obstacles = [];
     this.powerUps = [];
     this.score = 0;
@@ -47,26 +47,26 @@ class GameScene {
   update(dt) {
     if (this.state !== 'playing') return;
 
-    // 速度递增
-    this.speed += dt * 0.02;
-    this.distance += this.speed * dt;
+    // 速度递增 (~1.2/s, 从5增至约77在60秒)
+    this.speed += dt * 1.2;
+    this.distance += this.speed * 60 * dt;
 
-    // 视差滚动背景
-    this.bgOffset = (this.bgOffset + this.speed * dt * 0.3) % this.game.canvasWidth;
-    this.bgOffset2 = (this.bgOffset2 + this.speed * dt * 0.6) % this.game.canvasWidth;
-    this.bgOffset3 = (this.bgOffset3 + this.speed * dt * 1.0) % this.game.canvasWidth;
+    // 视差滚动背景 (60* converts speed to px/s for dt in seconds)
+    this.bgOffset = (this.bgOffset + this.speed * 18 * dt) % this.game.canvasWidth;
+    this.bgOffset2 = (this.bgOffset2 + this.speed * 36 * dt) % this.game.canvasWidth;
+    this.bgOffset3 = (this.bgOffset3 + this.speed * 60 * dt) % this.game.canvasWidth;
 
     // 玩家更新
     this.player.update(dt);
 
     // 生成器
-    const spawned = this.spawner.update(dt, this.speed, this.game.canvasWidth, this.game.canvasHeight);
+    const spawned = this.spawner.update(dt, this.speed);
     if (spawned.obstacles) this.obstacles.push(...spawned.obstacles);
     if (spawned.powerUps) this.powerUps.push(...spawned.powerUps);
 
     // 障碍物移动+碰撞
     this.obstacles = this.obstacles.filter(o => {
-      o.x -= this.speed * dt * 60;
+      o.x -= this.speed * 3 * dt;  // px/frame, dt~1 at 60fps
       if (o.x < -o.width) {
         this.combo = 0;
         return false;
@@ -79,7 +79,7 @@ class GameScene {
 
     // 道具移动+收集
     this.powerUps = this.powerUps.filter(p => {
-      p.x -= this.speed * dt * 60;
+      p.x -= this.speed * 3 * dt;  // same speed as obstacles
       if (p.x < -p.width) return false;
       if (this._checkCollision(p)) {
         this._onCollect(p);
@@ -171,8 +171,11 @@ class GameScene {
 
   _checkCollision(obj) {
     const p = this.player.getHitbox();
-    return p.x < obj.x + obj.width && p.x + p.width > obj.x &&
-           p.y < obj.y + obj.height && p.y + p.height > obj.y;
+    // obj.x/obj.y are CENTER coordinates, convert to top-left for AABB
+    const ox = obj.x - obj.width / 2;
+    const oy = obj.y - obj.height / 2;
+    return p.x < ox + obj.width && p.x + p.width > ox &&
+           p.y < oy + obj.height && p.y + p.height > oy;
   }
 
   _onHit() {

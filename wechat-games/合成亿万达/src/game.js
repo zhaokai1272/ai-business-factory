@@ -62,21 +62,35 @@ function switchScene(name, params = {}) {
 
 const game = { ctx, canvas, canvasWidth, canvasHeight, width: canvasWidth, height: canvasHeight, switchScene, gameData };
 
+// ==================== 系统挂载 ====================
+const IdleSystem = require('./js/systems/IdleSystem.js');
+const MergeSystem = require('./js/systems/MergeSystem.js');
+game.idleSystem = new IdleSystem(game);
+game.mergeSystem = new MergeSystem(game);
+
 // ==================== 触摸事件 ====================
 wx.onTouchStart((e) => {
-  if (currentScene && currentScene.handleTouch) currentScene.handleTouch(e);
+  if (!currentScene) return;
+  const t = e.touches[0];
+  if (currentScene.onTouchStart) currentScene.onTouchStart(t.clientX, t.clientY);
 });
 wx.onTouchMove((e) => {
-  if (currentScene && currentScene.handleTouch) currentScene.handleTouch(e);
+  if (!currentScene) return;
+  const t = e.touches[0];
+  if (currentScene.onTouchMove) currentScene.onTouchMove(t.clientX, t.clientY);
 });
 wx.onTouchEnd((e) => {
-  if (currentScene && currentScene.handleTouch) currentScene.handleTouch(e);
+  if (!currentScene) return;
+  const t = e.changedTouches[0];
+  if (currentScene.onTouchEnd) currentScene.onTouchEnd(t.clientX, t.clientY);
 });
 
 // ==================== 主循环 ====================
 let lastTime = 0;
+let isPaused = false;
 function gameLoop(ts) {
-  let dt = (ts - lastTime) / 1000; // 秒
+  if (isPaused) { requestAnimationFrame(gameLoop); return; }
+  let dt = (ts - lastTime) / 1000; // seconds
   if (dt <= 0 || dt > 0.2) dt = 0.016;
   lastTime = ts;
 
@@ -91,11 +105,15 @@ function gameLoop(ts) {
   requestAnimationFrame(gameLoop);
 }
 
+// ==================== 生命周期 ====================
+wx.onShow(() => { isPaused = false; console.log('[生命周期] 恢复'); });
+wx.onHide(() => { isPaused = true; console.log('[生命周期] 暂停'); });
+
 // ==================== 启动 ====================
 function bootstrap() {
   console.log('[启动] 合成亿万达 v1.0.0');
   switchScene('menu');
-  lastTime = Date.now();
+  lastTime = 0;
   requestAnimationFrame(gameLoop);
 }
 bootstrap();

@@ -68,6 +68,11 @@ class MenuScene extends Scene {
 
     // 构建按钮区域（Canvas坐标）
     this._buildButtons();
+
+    // 弹窗状态
+    this._popupOpen = null;
+    this._shopItems = [];
+    this._rankData = [];
   }
 
   _buildButtons() {
@@ -117,7 +122,7 @@ class MenuScene extends Scene {
   update(dt) {
     if (!this.active) return;
 
-    const dtSec = dt / 1000;
+    const dtSec = dt;  // dt already in seconds from game.js
 
     // 弹窗渐入动画
     if (this.showOfflinePopup) {
@@ -204,6 +209,10 @@ class MenuScene extends Scene {
     // 版本信息
     this.drawText('v1.0.0', w / 2, h - 20, '12px "PingFang SC", sans-serif', 'rgba(255,255,255,0.3)');
 
+    // 弹窗
+    if (this._popupOpen === 'shop') this._renderShopPopup();
+    if (this._popupOpen === 'rank') this._renderRankPopup();
+
     // 离线收益弹窗
     if (this.showOfflinePopup && this.popupAlpha > 0.01) {
       this._renderOfflinePopup();
@@ -264,7 +273,9 @@ class MenuScene extends Scene {
   }
 
   onTouchStart(x, y) {
-    // 检查弹窗按钮
+    // 检查弹窗
+    if (this._popupOpen) { this._handlePopupTouch(x, y); return; }
+    // 检查离线弹窗按钮
     if (this.showOfflinePopup && this._popupBtn) {
       const b = this._popupBtn;
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
@@ -290,13 +301,30 @@ class MenuScene extends Scene {
   }
 
   _onShop() {
-    // TODO: 商店场景
-    console.log('Shop clicked');
+    this._popupOpen = 'shop';
+    this._shopItems = [
+      {id:'accel1',name:'加速器x1',price:50,desc:'30秒2.5倍速',icon:'⚡'},
+      {id:'accel3',name:'加速器x3',price:120,desc:'省20金币',icon:'⚡⚡'},
+      {id:'accel5',name:'加速器x5',price:180,desc:'省70金币',icon:'⚡⚡⚡'},
+      {id:'gem10',name:'钻石x10',price:5,desc:'钻石货币',icon:'💎'},
+      {id:'gem50',name:'钻石x50',price:20,desc:'省5钻石',icon:'💎💎'},
+    ];
   }
 
   _onRank() {
-    // TODO: 排行榜
-    console.log('Rank clicked');
+    this._popupOpen = 'rank';
+    this._rankData = [{name:'你',worth:this.game.gameData.totalWorth||0,me:true}];
+    if (typeof wx !== 'undefined' && wx.cloud) {
+      try {
+        wx.cloud.callFunction({name:'leaderboard',data:{type:'worth',limit:10}}).then(res => {
+          if (res.result && res.result.list) {
+            this._rankData = res.result.list.map((r,i) => ({
+              name: r.nickName||'玩家'+i, worth: r.totalWorth, me: false
+            }));
+          }
+        }).catch(() => {});
+      } catch(e) {}
+    }
   }
 
   _formatWorth(worth) {
@@ -313,5 +341,104 @@ class MenuScene extends Scene {
     return `${Math.floor(seconds / 3600)}小时${Math.floor((seconds % 3600) / 60)}分钟`;
   }
 }
+
+
+  _handlePopupTouch(x, y) {
+    const w = this.width, h = this.height;
+    const px = w * 0.08, py = h * 0.1, pw = w * 0.84, ph = h * 0.65;
+
+    // Close X
+    if (x > px + pw - 40 && x < px + pw && y > py && y < py + 40) {
+      this._popupOpen = null; return;
+    }
+
+    if (this._popupOpen === 'shop') {
+      const startY = py + 50, rowH = 48;
+      for (let i = 0; i < this._shopItems.length; i++) {
+        const ry = startY + i * rowH;
+        if (y > ry && y < ry + rowH && x > px + 5 && x < px + pw - 5) {
+          this._buyShopItem(i); return;
+        }
+      }
+      this._popupOpen = null;
+    } else if (this._popupOpen === 'rank') {
+      this._popupOpen = null; // click anywhere to close
+    }
+  }
+
+  _buyShopItem(idx) {
+    const item = this._shopItems[idx];
+    if (!item) return;
+    const gd = this.game.gameData;
+    const currency = item.id.startsWith('gem') ? 'diamonds' : 'coins';
+    if (gd[currency] >= item.price) {
+      gd[currency] -= item.price;
+      if (item.id.startsWith('accel')) {
+        const count = parseInt(item.id.replace('accel','')) || 1;
+        gd.accelerators = (gd.accelerators || 0) + count;
+      } else if (item.id.startsWith('gem')) {
+        const count = parseInt(item.id.replace('gem','')) || 10;
+        gd.diamonds = (gd.diamonds || 0) + count;
+      }
+      if (typeof wx !== 'undefined') wx.showToast({title:'购买成功！',icon:'success'});
+    } else {
+      if (typeof wx !== 'undefined') wx.showToast({title:'余额不足',icon:'none'});
+    }
+  }
+
+  _renderShopPopup() {
+    const ctx = this.ctx, w = this.width, h = this.height;
+    const px = w * 0.08, py = h * 0.1, pw = w * 0.84, ph = h * 0.65;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(20,15,45,0.95)'; ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+    this.drawRoundRect(px, py, pw, ph, 18); ctx.stroke();
+
+    this.drawText('🏪 商店', px + pw/2, py + 28, 'bold 20px "PingFang SC", sans-serif', '#FFD700');
+    this.drawText('✕', px + pw - 22, py + 28, 'bold 18px "PingFang SC", sans-serif', '#e74c3c');
+
+    // Balance
+    const gd = this.game.gameData;
+    this.drawText(`🪙${IdleSystem.formatEarnings(gd.coins)}  💎${gd.diamonds}`,
+      px + pw/2, py + 48, '12px "PingFang SC", sans-serif', '#aaa');
+
+    const startY = py + 55, rowH = 48;
+    for (let i = 0; i < this._shopItems.length; i++) {
+      const it = this._shopItems[i], ry = startY + i * rowH;
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      this.drawRoundRect(px + 5, ry, pw - 10, rowH - 4, 8);
+
+      this.drawText(it.icon+' '+it.name, px + 15, ry + 18, 'bold 13px "PingFang SC", sans-serif', '#fff', 'left');
+      this.drawText(it.desc, px + 15, ry + 34, '11px "PingFang SC", sans-serif', '#888', 'left');
+      const curr = it.id.startsWith('gem') ? '💎' : '🪙';
+      this.drawText(curr+it.price, px + pw - 15, ry + 26, 'bold 14px "PingFang SC", sans-serif', '#FFD700', 'right');
+    }
+  }
+
+  _renderRankPopup() {
+    const ctx = this.ctx, w = this.width, h = this.height;
+    const px = w * 0.08, py = h * 0.1, pw = w * 0.84, ph = h * 0.55;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(20,15,45,0.95)'; ctx.strokeStyle = '#4169E1'; ctx.lineWidth = 2;
+    this.drawRoundRect(px, py, pw, ph, 18); ctx.stroke();
+
+    this.drawText('🏆 富豪榜', px + pw/2, py + 28, 'bold 20px "PingFang SC", sans-serif', '#4169E1');
+
+    const startY = py + 50, rowH = 38;
+    const medals = ['🥇','🥈','🥉'];
+    for (let i = 0; i < Math.min(this._rankData.length, 10); i++) {
+      const r = this._rankData[i], ry = startY + i * rowH;
+      ctx.fillStyle = r.me ? 'rgba(65,105,225,0.2)' : 'rgba(255,255,255,0.03)';
+      this.drawRoundRect(px + 5, ry, pw - 10, rowH - 3, 6);
+
+      this.drawText((medals[i]||(i+1+'.'))+' '+r.name,
+        px + 15, ry + 20, '13px "PingFang SC", sans-serif', '#fff', 'left');
+      this.drawText('💰'+IdleSystem.formatEarnings(r.worth||0),
+        px + pw - 15, ry + 20, 'bold 13px "PingFang SC", sans-serif', '#FFD700', 'right');
+    }
+
+    this.drawText('点击任意处关闭', px+pw/2, py+ph-12, '11px "PingFang SC", sans-serif', 'rgba(255,255,255,0.4)');
+  }
 
 module.exports = MenuScene;

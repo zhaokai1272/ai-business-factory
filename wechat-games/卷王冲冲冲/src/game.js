@@ -77,9 +77,11 @@ wx.onTouchEnd((e) => {
 
 // ==================== 主循环 ====================
 let lastTime = 0;
+let isPaused = false;
 function gameLoop(ts) {
-  let dt = (ts - lastTime) / 16.67; // 归一化到60fps ~1.0
-  if (dt <= 0 || dt > 5) dt = 1;
+  if (isPaused) { requestAnimationFrame(gameLoop); return; }
+  let dt = (ts - lastTime) / 1000; // seconds
+  if (dt <= 0 || dt > 0.2) dt = 0.016; // clamp
   lastTime = ts;
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -93,11 +95,15 @@ function gameLoop(ts) {
   requestAnimationFrame(gameLoop);
 }
 
+// ==================== 生命周期 ====================
+wx.onShow(() => { isPaused = false; console.log('[生命周期] 恢复'); });
+wx.onHide(() => { isPaused = true; console.log('[生命周期] 暂停'); });
+
 // ==================== 启动 ====================
 function bootstrap() {
   console.log('[启动] 卷王冲冲冲 v1.0.0');
   switchScene('menu');
-  lastTime = Date.now();
+  lastTime = 0; // will be set on first frame
   requestAnimationFrame(gameLoop);
 }
 bootstrap();

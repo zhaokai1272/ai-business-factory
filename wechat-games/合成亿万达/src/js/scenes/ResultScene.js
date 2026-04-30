@@ -37,7 +37,7 @@ class ResultScene extends Scene {
   update(dt) {
     if (!this.active) return;
 
-    const dtSec = dt / 1000;
+    const dtSec = dt;  // dt already in seconds from game.js
 
     // 卡片渐入动画
     this.cardAlpha += (1 - this.cardAlpha) * 5 * dtSec;
@@ -193,7 +193,7 @@ class ResultScene extends Scene {
   }
 
   _onBackToMenu() {
-    this.switchTo(require('./MenuScene'));
+    this.switchTo('menu');
   }
 
   _formatTime(seconds) {

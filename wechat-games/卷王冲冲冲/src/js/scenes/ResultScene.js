@@ -57,7 +57,7 @@ class ResultScene {
     ctx.font = '18px sans-serif';
     ctx.fillStyle = '#AAA';
     const dist = this.score; // 距离=分数
-    ctx.fillText(`奔跑距离: ${dist}m  |  高速: ${Math.floor(Math.random() * 20 + 20)}km/h`, cx, h * 0.48);
+    ctx.fillText(`奔跑距离: ${dist}m  |  最高速度: ${Math.floor(this.game.gameData.maxSpeed || 20)}km/h`, cx, h * 0.48);
 
     // 梗图文案
     const jokes = [
@@ -79,7 +79,7 @@ class ResultScene {
       this._drawRoundRect(ctx, btnX, h * 0.65, btnW, btnH, 12);
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('📺 看广告复活', cx, h * 0.65 + 32);
+      ctx.fillText(this._adLoading ? '📺 加载中...' : '📺 看广告复活', cx, h * 0.65 + 32);
     }
 
     // 再来一局
@@ -119,9 +119,7 @@ class ResultScene {
 
     // 复活按钮
     if (this.showRevive && clientY > h * 0.65 && clientY < h * 0.65 + 50) {
-      console.log('[Result] 看广告复活');
-      // 微信激励视频广告接入点
-      this.game.switchScene('game');
+      this._watchAdForRevive();
       return;
     }
     // 再来一局
@@ -131,12 +129,66 @@ class ResultScene {
     }
     // 分享
     if (clientY > h * 0.85 && clientY < h * 0.85 + 50) {
-      console.log('[Result] 分享战绩');
-      // 微信分享API接入点
-      this.game.switchScene('menu');
+      this._doShare();
       return;
     }
   }
 }
+
+
+  /** 初始化广告（延迟到首次需要时） */
+  _initAd() {
+    if (this._videoAd) return;
+    if (typeof wx === 'undefined') return;
+    try {
+      this._videoAd = wx.createRewardedVideoAd({ adUnitId: 'adunit-58e45f7d3183d214' });
+      this._videoAd.onLoad(() => { this._adLoading = false; });
+      this._videoAd.onError(() => { this._adLoading = false; });
+      this._videoAd.onClose(res => {
+        if (res && res.isEnded) {
+          this.game.gameData.lives = 3;
+          this.game.switchScene('game');
+        }
+      });
+      this._adLoading = true;
+      this._videoAd.load();
+    } catch(e) {
+      this._adLoading = false;
+    }
+  }
+
+  /** 看广告复活 */
+  _watchAdForRevive() {
+    this._initAd();
+    if (this._videoAd) {
+      this._videoAd.show().catch(() => {
+        this._videoAd.load().then(() => this._videoAd.show()).catch(() => {
+          // 广告不可用，降级：免费复活1次
+          this.game.gameData.lives = 1;
+          this.game.switchScene('game');
+        });
+      });
+    } else {
+      // 无广告环境，直接复活
+      this.game.gameData.lives = 1;
+      this.game.switchScene('game');
+    }
+  }
+
+  /** 微信分享 */
+  _doShare() {
+    if (typeof wx !== 'undefined' && wx.shareAppMessage) {
+      wx.shareAppMessage({
+        title: `我在卷王冲冲冲跑了${this.score}分！${this.rank}`,
+        imageUrl: '',
+        success: () => {
+          this.game.gameData.diamonds = (this.game.gameData.diamonds || 0) + 3;
+          if (typeof wx !== 'undefined') wx.showToast({title:'分享成功，+3💎',icon:'success'});
+        }
+      });
+    } else {
+      this.game.switchScene('menu');
+    }
+  }
 
 module.exports = ResultScene;

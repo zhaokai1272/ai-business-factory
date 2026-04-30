@@ -2,7 +2,6 @@
   "appid": "wx3bffbc31853d2140",
   "projectname": "合成亿万达",
   "description": "合成亿万达 - 2048式拖拽合并挂机游戏",
-  "miniprogramRoot": "./",
   "compileType": "game",
   "setting": {
     "urlCheck": false,

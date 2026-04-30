@@ -230,7 +230,7 @@ class GameScene extends Scene {
   update(dt) {
     if (!this.active) return;
 
-    const dtSec = dt / 1000;
+    const dtSec = dt;  // dt already in seconds from game.js
 
     // 更新挂机系统
     this.game.idleSystem.update(dtSec);
@@ -769,7 +769,7 @@ class GameScene extends Scene {
     if (dragCard.level >= Card.MAX_LEVEL) {
       // 触发成就展示
       setTimeout(() => {
-        this.switchTo(require('./ResultScene'), {
+        this.switchTo('result', {
           highestLevel: this.highestLevel,
           highestName: dragCard.name,
           totalWorth: this.game.gameData.totalWorth,
@@ -826,7 +826,7 @@ class GameScene extends Scene {
    * 菜单按钮点击
    */
   _onMenu() {
-    this.switchTo(require('./MenuScene'));
+    this.switchTo('menu');
   }
 }
 
