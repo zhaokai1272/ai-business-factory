@@ -1,195 +1,98 @@
 /**
- * ResultScene.js — 卷王冲冲冲 结算场景
- * 展示分数、评价、复活/分享选项
+ * ResultScene.js — 结算钩子 (新纪录/段位/广告/分享)
  */
-
 class ResultScene {
-  constructor(game) {
-    this.game = game;
-    this.score = 0;
-    this.rank = '';
-    this.showRevive = true;
+  constructor(game) { this.game=game; this.score=0; this.distance=0; this.speed=0; this.combo=0; this.coins=0; this.dodges=0; this.collects=0; this.rank=''; this.isNew=false; }
+
+  enter(p={}) {
+    const gd=this.game.gameData;
+    this.score=p.score||gd.score||0; this.distance=p.distance||gd.distance||0;
+    this.speed=p.maxSpeed||gd.maxSpeed||0; this.combo=p.maxCombo||0;
+    this.coins=p.coins||0; this.dodges=p.dodges||0; this.collects=p.collects||0;
+    this.isNew = this.score > (gd.highScore||0);
+    if (this.isNew) gd.highScore = this.score;
+    gd.coins += this.coins;
+    this._setRank();
   }
 
-  enter(params = {}) {
-    this.score = params.score || 0;
-    this.showRevive = params.canRevive !== false;
-    this._calcRank();
-  }
-
-  /** 计算段位评价 */
-  _calcRank() {
-    const s = this.score;
-    if (s >= 10000) this.rank = '👑 资本本资';
-    else if (s >= 5000) this.rank = '💼 总监';
-    else if (s >= 2000) this.rank = '👔 经理';
-    else if (s >= 1000) this.rank = '🧑‍💻 骨干';
-    else if (s >= 500) this.rank = '📋 专员';
-    else if (s >= 200) this.rank = '🎓 实习生';
-    else this.rank = '📄 简历待投';
+  _setRank() {
+    const s=this.score;
+    if(s>=10000) this.rank='👑 资本本资';
+    else if(s>=5000) this.rank='💼 总监';
+    else if(s>=2500) this.rank='👔 经理';
+    else if(s>=1000) this.rank='🧑‍💻 骨干';
+    else if(s>=500) this.rank='📋 专员';
+    else if(s>=200) this.rank='🎓 实习生';
+    else this.rank='📄 简历待投';
   }
 
   render(ctx) {
-    const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    const cx = w / 2;
-
-    // 背景
-    ctx.fillStyle = '#2C2C54';
-    ctx.fillRect(0, 0, w, h);
-
-    // 标题
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('💼 今日战绩', cx, h * 0.15);
+    const w=this.game.canvasWidth, h=this.game.canvasHeight, cx=w/2;
+    ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,w,h);
 
     // 段位
-    ctx.font = 'bold 28px sans-serif';
-    ctx.fillStyle = '#FFD700';
-    ctx.fillText(this.rank, cx, h * 0.25);
+    ctx.fillStyle='#FFD700'; ctx.font='bold 28px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(this.rank, cx, h*0.12);
+
+    // 新纪录
+    if(this.isNew){ ctx.fillStyle='#FF6347'; ctx.font='bold 18px sans-serif'; ctx.fillText('🏆 新纪录!',cx,h*0.19); }
 
     // 分数
-    ctx.font = '48px bold sans-serif';
-    ctx.fillStyle = '#FFF';
-    ctx.fillText(`${this.score}`, cx, h * 0.38);
+    ctx.fillStyle='#fff'; ctx.font='bold 48px sans-serif';
+    ctx.fillText(`${this.score}`, cx, h*0.28);
 
     // 统计
-    ctx.font = '18px sans-serif';
-    ctx.fillStyle = '#AAA';
-    const dist = this.score; // 距离=分数
-    ctx.fillText(`奔跑距离: ${dist}m  |  最高速度: ${Math.floor(this.game.gameData.maxSpeed || 20)}km/h`, cx, h * 0.48);
-
-    // 梗图文案
-    const jokes = [
-      '🏃 "只要我跑得够快，DDL就追不上我"',
-      '☕ "咖啡续命中，勿扰"',
-      '📋 "今天的会议，明天的需求"',
-      '✂️ "N+1？不存在的，我N+无限续杯"'
+    ctx.fillStyle='#ccc'; ctx.font='14px sans-serif';
+    const stats=[
+      `🏃 ${Math.floor(this.distance)}m  ⚡ ${this.speed}km/h  🔥 ${this.combo}x`,
+      `👻 躲避${this.dodges}  🎁 收集${this.collects}  💰 +${this.coins}`
     ];
-    ctx.fillStyle = '#FF6B6B';
-    ctx.font = '16px sans-serif';
-    ctx.fillText(jokes[Math.floor(Math.random() * jokes.length)], cx, h * 0.56);
+    stats.forEach((s,i)=>ctx.fillText(s,cx,h*0.36+i*20));
 
-    // 按钮区域
-    const btnW = w * 0.7, btnH = 50, btnX = cx - btnW / 2;
-    
-    // 复活按钮
-    if (this.showRevive) {
-      ctx.fillStyle = '#FF6B6B';
-      this._drawRoundRect(ctx, btnX, h * 0.65, btnW, btnH, 12);
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(this._adLoading ? '📺 加载中...' : '📺 看广告复活', cx, h * 0.65 + 32);
-    }
+    // 按钮
+    const bw=w*0.6, bh=46, bx=(w-bw)/2;
+    // 广告复活
+    ctx.fillStyle='#e74c3c'; this._rr(ctx,bx,h*0.50,bw,bh,bh/2);
+    ctx.fillStyle='#fff'; ctx.font='bold 17px sans-serif';
+    ctx.fillText('📺 看广告复活', cx, h*0.50+bh/2+6);
 
-    // 再来一局
-    ctx.fillStyle = '#4834D4';
-    this._drawRoundRect(ctx, btnX, h * 0.75, btnW, btnH, 12);
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillText('🔄 再来一局', cx, h * 0.75 + 32);
+    // 再来
+    ctx.fillStyle='#3498db'; this._rr(ctx,bx,h*0.50+bh+14,bw,bh,bh/2);
+    ctx.fillText('🔄 再来一局', cx, h*0.50+bh*1.5+20);
 
-    // 分享按钮
-    ctx.fillStyle = '#2ED573';
-    this._drawRoundRect(ctx, btnX, h * 0.85, btnW, btnH, 12);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('📤 分享战绩', cx, h * 0.85 + 32);
+    // 分享
+    ctx.fillStyle='#2ecc71'; this._rr(ctx,bx,h*0.50+bh*2+28,bw,bh,bh/2);
+    ctx.fillText('📤 分享战绩', cx, h*0.50+bh*2.5+34);
+
+    // 底部文案
+    ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='11px sans-serif';
+    ctx.fillText(`金币余额: 💰${this.game.gameData.coins||0}`, cx, h-20);
   }
 
-  _drawRoundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-    ctx.fill();
-  }
+  _rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath(); ctx.fill(); }
 
   handleTouch(e) {
-    if (e.type !== 'touchstart') return;
-    const { clientX, clientY } = e.touches[0];
-    const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    const cx = w / 2, btnW = w * 0.7, btnX = cx - btnW / 2;
-
-    // 复活按钮
-    if (this.showRevive && clientY > h * 0.65 && clientY < h * 0.65 + 50) {
-      this._watchAdForRevive();
-      return;
-    }
-    // 再来一局
-    if (clientY > h * 0.75 && clientY < h * 0.75 + 50) {
-      this.game.switchScene('game');
-      return;
-    }
-    // 分享
-    if (clientY > h * 0.85 && clientY < h * 0.85 + 50) {
-      this._doShare();
-      return;
-    }
+    if(e.type!=='touchstart') return;
+    const ty=e.touches[0].clientY, h=this.game.canvasHeight;
+    if(ty>h*0.50&&ty<h*0.50+46){ this._tryRevive(); return; }
+    if(ty>h*0.50+60&&ty<h*0.50+106){ this.game.switchScene('game'); return; }
+    if(ty>h*0.50+120&&ty<h*0.50+166){ this._share(); return; }
   }
 
-
-
-  /** 初始化广告（延迟到首次需要时） */
-  _initAd() {
-    if (this._videoAd) return;
-    if (typeof wx === 'undefined') return;
-    try {
-      this._videoAd = wx.createRewardedVideoAd({ adUnitId: 'adunit-58e45f7d3183d214' });
-      this._videoAd.onLoad(() => { this._adLoading = false; });
-      this._videoAd.onError(() => { this._adLoading = false; });
-      this._videoAd.onClose(res => {
-        if (res && res.isEnded) {
-          this.game.gameData.lives = 3;
-          this.game.switchScene('game');
-        }
-      });
-      this._adLoading = true;
-      this._videoAd.load();
-    } catch(e) {
-      this._adLoading = false;
-    }
+  _tryRevive() {
+    if(typeof wx!=='undefined'&&wx.createRewardedVideoAd){
+      try{
+        const ad=wx.createRewardedVideoAd({adUnitId:'adunit-58e45f7d3183d214'});
+        ad.onClose(res=>{ if(res&&res.isEnded) this.game.switchScene('game',{revive:true}); });
+        ad.load().then(()=>ad.show()).catch(()=>this.game.switchScene('game'));
+      }catch(e){ this.game.switchScene('game'); }
+    } else { this.game.switchScene('game'); }
   }
 
-  /** 看广告复活 */
-  _watchAdForRevive() {
-    this._initAd();
-    if (this._videoAd) {
-      this._videoAd.show().catch(() => {
-        this._videoAd.load().then(() => this._videoAd.show()).catch(() => {
-          // 广告不可用，降级：免费复活1次
-          this.game.gameData.lives = 1;
-          this.game.switchScene('game');
-        });
-      });
-    } else {
-      // 无广告环境，直接复活
-      this.game.gameData.lives = 1;
-      this.game.switchScene('game');
-    }
-  }
-
-  /** 微信分享 */
-  _doShare() {
-    if (typeof wx !== 'undefined' && wx.shareAppMessage) {
-      wx.shareAppMessage({
-        title: `我在卷王冲冲冲跑了${this.score}分！${this.rank}`,
-        imageUrl: '',
-        success: () => {
-          this.game.gameData.diamonds = (this.game.gameData.diamonds || 0) + 3;
-          if (typeof wx !== 'undefined') wx.showToast({title:'分享成功，+3💎',icon:'success'});
-        }
-      });
-    } else {
-      this.game.switchScene('menu');
+  _share() {
+    if(typeof wx!=='undefined'&&wx.shareAppMessage){
+      wx.shareAppMessage({title:`我跑${this.score}分!${this.rank}`,success:()=>{ this.game.gameData.diamonds+=3; }});
     }
   }
 }
-
 module.exports = ResultScene;

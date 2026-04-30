@@ -356,18 +356,28 @@ class MenuScene extends Scene {
    * 渲染金币/钻石资源
    */
   renderResources(ctx) {
-    const y = this.canvasHeight * 0.55;
+    const y = this.canvasHeight * 0.52;
     const cx = this.canvasWidth / 2;
 
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
+    // 历史最高
+    const hs = this.game.gameData.highScore || 0;
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`🏆 ${hs}`, cx, y);
 
-    // 金币
-    ctx.fillText(`💰 ${this.game.gameData.coins}`, cx - 50, y);
+    // 金币+钻石
+    ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif';
+    ctx.fillText(`💰${this.game.gameData.coins||0}  💎${this.game.gameData.diamonds||0}`, cx, y+28);
 
-    // 钻石
-    ctx.fillText(`💎 ${this.game.gameData.diamonds}`, cx + 50, y);
+    // 段位
+    let rank='📄 简历待投';
+    if(hs>=10000) rank='👑 资本本资';
+    else if(hs>=5000) rank='💼 总监';
+    else if(hs>=2500) rank='👔 经理';
+    else if(hs>=1000) rank='🧑‍💻 骨干';
+    else if(hs>=500) rank='📋 专员';
+    else if(hs>=200) rank='🎓 实习生';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '13px sans-serif';
+    ctx.fillText(rank, cx, y+48);
   }
 
   /**
