@@ -67,6 +67,7 @@ class PowerUp {
     this.y = y;
     this.lane = lane;
     this.type = POWERUP_TYPES[typeKey] || POWERUP_TYPES.COFFEE;
+    this._imgMgr = null; // set by caller
     this.width = this.type.width;
     this.height = this.type.height;
     this.speed = 0;
@@ -168,15 +169,23 @@ class PowerUp {
     ctx.save();
     ctx.translate(this.x, this.y + this.bobOffset);
 
-    // 发光效果
     const glowAlpha = 0.3 + this.glowIntensity * 0.4;
     ctx.fillStyle = `rgba(255, 255, 255, ${glowAlpha})`;
     ctx.beginPath();
     ctx.arc(0, 0, this.width * 0.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // 旋转
     ctx.rotate(this.rotation);
+
+    const imgNames = { coffee: '16_powerup_coffee.png', fish: '16_powerup_coffee.png', salary: '16_powerup_coffee.png' };
+    const imgName = imgNames[this.type.type] || '16_powerup_coffee.png';
+    let img = null;
+    if (this._imgMgr) img = this._imgMgr.get(imgName);
+    if (img && img.complete && img.width > 0) {
+      ctx.drawImage(img, -this.width/2, -this.height/2, this.width, this.height);
+      ctx.restore();
+      return;
+    }
 
     switch (this.type.type) {
       case 'coffee':

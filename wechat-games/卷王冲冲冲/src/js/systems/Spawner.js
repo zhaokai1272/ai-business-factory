@@ -3,17 +3,18 @@
  * 控制障碍物和道具的生成节奏，随游戏进程难度递增
  */
 
-const Obstacle = require('../entities/Obstacle.js');
-const PowerUp = require('../entities/PowerUp.js');
+const { Obstacle } = require('../entities/Obstacle.js');
+const { PowerUp } = require('../entities/PowerUp.js');
 
 // 类型池
 const OBSTACLE_POOL = ['boss', 'meeting', 'overtime', 'overtime', 'layoff'];
 const POWERUP_POOL = ['coffee', 'fish', 'salary'];
 
 class Spawner {
-  constructor(canvasWidth, canvasHeight) {
+  constructor(canvasWidth, canvasHeight, imageManager) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
+    this._imgMgr = imageManager;
     this.laneCount = 3;
     this.laneHeight = canvasHeight / this.laneCount;
 
@@ -85,6 +86,7 @@ class Spawner {
 
     const obs = new Obstacle();
     obs.init(x, y, lane, typeKey);
+    obs._imgMgr = this._imgMgr;
     this.totalSpawned++;
     return obs;
   }
@@ -98,6 +100,7 @@ class Spawner {
 
     const pu = new PowerUp();
     pu.init(x, y, lane, typeKey);
+    pu._imgMgr = this._imgMgr;
     return pu;
   }
 

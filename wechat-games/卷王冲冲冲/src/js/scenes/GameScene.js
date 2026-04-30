@@ -23,6 +23,7 @@ class GameScene {
     this.bgOffset = 0;
     this.bgOffset2 = 0;
     this.bgOffset3 = 0;
+    this._backBtn = { x: 10, y: 10, w: 60, h: 32 };  // 返回按钮
   }
 
   enter(params = {}) {
@@ -32,7 +33,8 @@ class GameScene {
     const y1 = laneHeight * 1.5;
     const y2 = laneHeight * 2.5;
     this.player = new Player(this.game.canvasWidth * 0.15, y1, [y0, y1, y2], 1);
-    this.spawner = new Spawner(this.game.canvasWidth, this.game.canvasHeight);
+    this.player.game = this.game;
+    this.spawner = new Spawner(this.game.canvasWidth, this.game.canvasHeight, this.game.imageManager);
     this.obstacles = [];
     this.powerUps = [];
     this.score = 0;
@@ -42,6 +44,7 @@ class GameScene {
     this.lives = 3;
     this.state = 'playing';
     this.bgOffset = this.bgOffset2 = this.bgOffset3 = 0;
+    this._backBtn = { x: 10, y: 10, w: 60, h: 32 };  // 返回按钮
   }
 
   update(dt) {
@@ -106,37 +109,41 @@ class GameScene {
 
   /** 视差滚动背景 */
   _drawBackground(ctx) {
-    // 远景天空
-    ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(0, 0, this.game.canvasWidth, this.game.canvasHeight);
+    const w = this.game.canvasWidth, h = this.game.canvasHeight;
+    const imgMgr = this.game.imageManager;
+    const bgImg = imgMgr ? imgMgr.get('21_bg_office_day.png') : null;
 
-    // 远景楼（最慢）
-    ctx.fillStyle = '#B0C4DE';
-    for (let i = -1; i < 3; i++) {
-      const x = i * this.game.canvasWidth - this.bgOffset;
-      ctx.fillRect(x + 50, 100, 60, 300);
-      ctx.fillRect(x + 200, 80, 80, 350);
+    if (bgImg && bgImg.complete && bgImg.width > 0) {
+      // 用真实背景图（铺满屏幕）
+      ctx.drawImage(bgImg, 0, 0, w, h);
+    } else {
+      // 回退纯色
+      ctx.fillStyle = '#87CEEB';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#B0C4DE';
+      for (let i = -1; i < 3; i++) {
+        const x = i * w - this.bgOffset;
+        ctx.fillRect(x + 50, 100, 60, 300);
+        ctx.fillRect(x + 200, 80, 80, 350);
+      }
+      ctx.fillStyle = '#A9A9A9';
+      for (let i = -1; i < 3; i++) {
+        const x = i * w - this.bgOffset2;
+        ctx.fillRect(x + 30, 200, 100, 200);
+        ctx.fillRect(x + 180, 180, 90, 250);
+      }
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, h * 0.85, w, h * 0.15);
     }
 
-    // 近景楼（中等）
-    ctx.fillStyle = '#A9A9A9';
-    for (let i = -1; i < 3; i++) {
-      const x = i * this.game.canvasWidth - this.bgOffset2;
-      ctx.fillRect(x + 30, 200, 100, 200);
-      ctx.fillRect(x + 180, 180, 90, 250);
-    }
-
-    // 地面（最快）
-    ctx.fillStyle = '#808080';
-    ctx.fillRect(0, this.game.canvasHeight * 0.85, this.game.canvasWidth, this.game.canvasHeight * 0.15);
-    // 跑道分隔线
-    const laneH = this.game.canvasHeight / 3;
-    ctx.strokeStyle = '#FFF';
+    // 跑道分隔线（始终绘制）
+    const laneH = h / 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
     ctx.setLineDash([20, 20]);
     for (let i = 1; i < 3; i++) {
       ctx.beginPath();
       ctx.moveTo(0, laneH * i);
-      ctx.lineTo(this.game.canvasWidth, laneH * i);
+      ctx.lineTo(w, laneH * i);
       ctx.stroke();
     }
     ctx.setLineDash([]);
@@ -145,11 +152,20 @@ class GameScene {
   /** 绘制HUD */
   _drawHUD(ctx) {
     const margin = 20;
+    // 返回按钮
+    const bb = this._backBtn;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    this._drawRoundRect(ctx, bb.x, bb.y, bb.w, bb.h, 6);
+    ctx.fillStyle = '#FFF';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('← 返回', bb.x + bb.w/2, bb.y + bb.h/2 + 5);
+    
     ctx.fillStyle = '#FFF';
     ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`🏃 ${this.score}`, margin, 30);
-    ctx.fillText(`❤️ x${this.lives}`, margin, 55);
+    ctx.fillText(`🏃 ${this.score}`, margin, 40);
+    ctx.fillText(`❤️ x${this.lives}`, margin, 65);
     ctx.textAlign = 'right';
     ctx.fillText(`${Math.floor(this.speed * 10)}km/h`, this.game.canvasWidth - margin, 30);
     if (this.combo > 1) {
@@ -200,9 +216,25 @@ class GameScene {
     }
   }
 
+  _drawRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath(); ctx.fill();
+  }
+
   handleTouch(e) {
     if (this.state === 'over') return;
     if (e.type === 'touchstart') {
+      // 返回按钮
+      const tx = e.touches[0].clientX, ty = e.touches[0].clientY;
+      const bb = this._backBtn;
+      if (tx >= bb.x && tx <= bb.x + bb.w && ty >= bb.y && ty <= bb.y + bb.h) {
+        this.game.switchScene('menu'); return;
+      }
       const y = e.touches[0].clientY;
       const laneH = this.game.canvasHeight / 3;
       const lane = Math.floor(y / laneH);

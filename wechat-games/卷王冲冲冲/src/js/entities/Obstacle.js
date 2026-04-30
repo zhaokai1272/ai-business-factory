@@ -68,6 +68,7 @@ class Obstacle {
     this.y = y;
     this.lane = lane;
     this.type = OBSTACLE_TYPES[typeKey] || OBSTACLE_TYPES.OVERTIME;
+    this._imgMgr = null;  // set by caller
     this.width = this.type.width;
     this.height = this.type.height;
     this.speed = 0;
@@ -146,14 +147,31 @@ class Obstacle {
    * @param {CanvasRenderingContext2D} ctx
    */
   render(ctx) {
-    const wobbleOffset = Math.sin(this.wobble) * 3; // 摆动偏移量
+    const wobbleOffset = Math.sin(this.wobble) * 3;
 
     ctx.save();
     ctx.translate(this.x, this.y + wobbleOffset);
 
-    // 碰撞闪烁红色覆盖
     if (this.flashing) {
       ctx.globalAlpha = 0.5 + Math.sin(this.flashTimer * 0.05) * 0.5;
+    }
+
+    // 尝试使用真实图片
+    const imgNames = {
+      boss: '12_obstacle_boss.png',
+      meeting: '11_obstacle_meeting.png',
+      overtime: '13_obstacle_overtime.png',
+      layoff: '14_obstacle_deadline.png'
+    };
+    const imgName = imgNames[this.type.type] || imgNames.overtime;
+    let img = null;
+    // Access image manager through a global-like pattern
+    if (this._imgMgr) img = this._imgMgr.get(imgName);
+    
+    if (img && img.complete && img.width > 0) {
+      ctx.drawImage(img, -this.width/2, -this.height/2, this.width, this.height);
+      ctx.restore();
+      return;
     }
 
     switch (this.type.type) {

@@ -14,6 +14,7 @@ class Player {
     // 位置
     this.x = x;
     this.y = y;
+    this.game = null; // set by GameScene
     
     // 跑道系统
     this.laneYs = laneYs;       // 三条跑道Y坐标数组
@@ -180,53 +181,49 @@ class Player {
   _drawBody(ctx, ox, oy, isTrail) {
     const w = this.width, h = this.height;
 
-    // 身体（西装）
-    ctx.fillStyle = isTrail ? '#888' : '#2c3e50';
-    ctx.fillRect(ox - w * 0.3, oy - h * 0.1, w * 0.6, h * 0.5);
-
-    // 头
-    ctx.fillStyle = isTrail ? '#bbb' : '#f5d6a0';
-    ctx.beginPath();
-    ctx.arc(ox, oy - h * 0.35, w * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 领带
-    if (!isTrail) {
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(ox, oy - h * 0.15);
-      ctx.lineTo(ox - w * 0.1, oy + h * 0.2);
-      ctx.lineTo(ox + w * 0.1, oy + h * 0.2);
-      ctx.closePath();
-      ctx.fill();
+    if (isTrail) {
+      // 残影用半透明简化绘制
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(ox - w * 0.3, oy - h * 0.1, w * 0.6, h * 0.5);
+      ctx.fillStyle = '#f5d6a0';
+      ctx.beginPath(); ctx.arc(ox, oy - h * 0.35, w * 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      return;
     }
 
-    // 公文包
-    ctx.fillStyle = isTrail ? '#999' : '#8b4513';
-    ctx.fillRect(ox + w * 0.2, oy - h * 0.1, w * 0.22, h * 0.25);
+    // 尝试使用真实图片
+    const imgMgr = (typeof this.game !== 'undefined' && this.game.imageManager) ? this.game.imageManager : null;
+    let imgName = '05_player_run1.png'; // default
+    if (this.animFrame === 0) imgName = '05_player_run1.png';
+    else if (this.animFrame === 1) imgName = '06_player_run2.png';
+    else if (this.animFrame === 2) imgName = '07_player_run3.png';
+    else imgName = '05_player_run1.png';
 
-    // 腿（跑步动画）
-    const legOff = Math.sin((this.animFrame * Math.PI) / 2) * h * 0.15;
-    ctx.fillStyle = isTrail ? '#777' : '#1a1a2e';
-    ctx.fillRect(ox - w * 0.15, oy + h * 0.35, w * 0.12, h * 0.25 + legOff);
-    ctx.fillRect(ox + w * 0.03, oy + h * 0.35, w * 0.12, h * 0.25 - legOff);
-
-    // 表情
-    if (!isTrail) {
-      ctx.fillStyle = '#000';
+    const img = imgMgr ? imgMgr.get(imgName) : null;
+    
+    if (img && img.complete && img.width > 0) {
+      // 用真实图片绘制
+      const iw = w * 1.8, ih = h * 1.8;
+      ctx.drawImage(img, ox - iw/2, oy - ih/2 + 5, iw, ih);
+    } else {
+      // 回退：Canvas绘制
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(ox - w * 0.3, oy - h * 0.1, w * 0.6, h * 0.5);
+      ctx.fillStyle = '#f5d6a0';
+      ctx.beginPath(); ctx.arc(ox, oy - h * 0.35, w * 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e74c3c';
       ctx.beginPath();
-      ctx.arc(ox - w * 0.07, oy - h * 0.38, 2, 0, Math.PI * 2);
-      ctx.arc(ox + w * 0.07, oy - h * 0.38, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(ox, oy - h * 0.3, w * 0.08, 0.1 * Math.PI, 0.9 * Math.PI);
-      ctx.stroke();
+      ctx.moveTo(ox, oy - h * 0.15); ctx.lineTo(ox - w * 0.1, oy + h * 0.2);
+      ctx.lineTo(ox + w * 0.1, oy + h * 0.2); ctx.closePath(); ctx.fill();
+      const legOff = Math.sin((this.animFrame * Math.PI) / 2) * h * 0.15;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(ox - w * 0.15, oy + h * 0.35, w * 0.12, h * 0.25 + legOff);
+      ctx.fillRect(ox + w * 0.03, oy + h * 0.35, w * 0.12, h * 0.25 - legOff);
     }
 
     // 无敌护盾
-    if (this.invincible && !isTrail) {
+    if (this.invincible) {
       ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
       ctx.lineWidth = 3;
       ctx.beginPath();
