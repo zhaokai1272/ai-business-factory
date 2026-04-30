@@ -485,8 +485,6 @@ class MenuScene extends Scene {
     }
     return false;
   }
-}
-
 
   /** 加载排行榜 */
   _loadRank() {
@@ -668,6 +666,7 @@ class MenuScene extends Scene {
     ctx.closePath();
     ctx.fill();
   }
+}
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {

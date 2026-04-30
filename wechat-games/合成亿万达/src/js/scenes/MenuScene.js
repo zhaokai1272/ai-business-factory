@@ -340,7 +340,7 @@ class MenuScene extends Scene {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
     return `${Math.floor(seconds / 3600)}小时${Math.floor((seconds % 3600) / 60)}分钟`;
   }
-}
+
 
 
   _handlePopupTouch(x, y) {
@@ -440,5 +440,6 @@ class MenuScene extends Scene {
 
     this.drawText('点击任意处关闭', px+pw/2, py+ph-12, '11px "PingFang SC", sans-serif', 'rgba(255,255,255,0.4)');
   }
+}
 
 module.exports = MenuScene;

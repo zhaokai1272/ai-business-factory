@@ -133,7 +133,7 @@ class ResultScene {
       return;
     }
   }
-}
+
 
 
   /** 初始化广告（延迟到首次需要时） */
@@ -190,5 +190,6 @@ class ResultScene {
       this.game.switchScene('menu');
     }
   }
+}
 
 module.exports = ResultScene;
