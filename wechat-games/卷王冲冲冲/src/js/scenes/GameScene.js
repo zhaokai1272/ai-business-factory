@@ -14,8 +14,8 @@ class GameScene {
     this.powerUps = [];
     this.score = 0;
     this.distance = 0;
-    this.speed = 200;           // 初始速度 px/s
-    this.maxSpeed = 600;        // 最大速度
+    this.speed = 150;           // 初始速度 px/s
+    this.maxSpeed = 400;        // 最大速度
     this.combo = 0;
     this.lives = 3;
     this.state = 'playing';
@@ -50,11 +50,11 @@ class GameScene {
     if (this.state !== 'playing') return;
 
     // 速度递增 (每秒+5，上限600)
-    this.speed = Math.min(this.maxSpeed, this.speed + dt * 5);
+    this.speed = Math.min(this.maxSpeed, this.speed + dt * 3);
     this.distance += this.speed * dt;
 
     // 背景滚动（向下 = 画面向上）
-    this.bgOffset = (this.bgOffset + this.speed * 0.5 * dt) % this.game.canvasHeight;
+    this.bgOffset = (this.bgOffset + 40 * dt) % this.game.canvasHeight;
 
     // 玩家更新
     this.player.update(dt);

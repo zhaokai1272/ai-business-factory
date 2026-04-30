@@ -1,12 +1,10 @@
 /**
- * 生成器系统 v2 - 秒级dt + 直接创建实体（无对象池）
- * 控制障碍物和道具的生成节奏，随游戏进程难度递增
+ * Spawner — 竖版生成器
+ * 3列跑道，障碍从上方生成
  */
-
 const { Obstacle } = require('../entities/Obstacle.js');
 const { PowerUp } = require('../entities/PowerUp.js');
 
-// 类型池
 const OBSTACLE_POOL = ['boss', 'meeting', 'overtime', 'overtime', 'layoff'];
 const POWERUP_POOL = ['coffee', 'fish', 'salary'];
 
@@ -16,53 +14,45 @@ class Spawner {
     this.canvasHeight = canvasHeight;
     this._imgMgr = imageManager;
     this.laneCount = 3;
-    this.laneHeight = canvasHeight / this.laneCount;
+    this.columnWidth = canvasWidth / this.laneCount;  // 列宽
 
-    // 生成计时 (ms)
     this.obstacleTimer = 0;
-    this.obstacleInterval = 1200;
-    this.obstacleMinInterval = 500;
+    this.obstacleInterval = 1500;    // 初始1.5秒一个障碍
+    this.obstacleMinInterval = 600;
     this.powerUpTimer = 0;
-    this.powerUpInterval = 4000;
-    this.powerUpMinInterval = 2500;
+    this.powerUpInterval = 5000;
+    this.powerUpMinInterval = 3000;
 
     this.totalSpawned = 0;
-    this.difficultyLevel = 1;
-    this.lastObstacleLane = -1;
+    this.lastObstacleCol = -1;
   }
 
-  getLaneY(lane) {
-    return lane * this.laneHeight + this.laneHeight / 2;
+  /** 获取列的X中心坐标 */
+  getColumnX(col) {
+    return col * this.columnWidth + this.columnWidth / 2;
   }
 
-  /**
-   * @param {number} dt - 秒
-   * @param {number} gameSpeed - 当前游戏速度
-   * @returns {{obstacles: Array, powerUps: Array}}
-   */
   update(dt, gameSpeed) {
-    const dtMs = dt * 1000; // 转为毫秒用于内部计时
+    const dtMs = dt * 1000;
     const spawned = { obstacles: [], powerUps: [] };
 
     // 难度递增
-    this.difficultyLevel = 1 + Math.floor(this.totalSpawned / 10);
-    this.obstacleInterval = Math.max(this.obstacleMinInterval, 1200 - (this.difficultyLevel - 1) * 60);
-    this.powerUpInterval = Math.max(this.powerUpMinInterval, 4000 - (this.difficultyLevel - 1) * 120);
+    const diff = 1 + Math.floor(this.totalSpawned / 8);
+    this.obstacleInterval = Math.max(this.obstacleMinInterval, 1500 - diff * 80);
+    this.powerUpInterval = Math.max(this.powerUpMinInterval, 5000 - diff * 100);
 
-    // 障碍物生成
+    // 障碍物
     this.obstacleTimer += dtMs;
     if (this.obstacleTimer >= this.obstacleInterval) {
       this.obstacleTimer -= this.obstacleInterval;
-      this.obstacleTimer += (Math.random() - 0.5) * this.obstacleInterval * 0.4;
-      const obs = this._spawnObstacle(gameSpeed);
+      const obs = this._spawnObstacle();
       if (obs) spawned.obstacles.push(obs);
     }
 
-    // 道具生成
+    // 道具
     this.powerUpTimer += dtMs;
     if (this.powerUpTimer >= this.powerUpInterval) {
       this.powerUpTimer -= this.powerUpInterval;
-      this.powerUpTimer += (Math.random() - 0.5) * this.powerUpInterval * 0.3;
       const pu = this._spawnPowerUp();
       if (pu) spawned.powerUps.push(pu);
     }
@@ -70,47 +60,48 @@ class Spawner {
     return spawned;
   }
 
-  _spawnObstacle(gameSpeed) {
-    let lane;
-    if (this.lastObstacleLane === -1) {
-      lane = Math.floor(Math.random() * this.laneCount);
+  _spawnObstacle() {
+    // 避开上一列
+    let col;
+    if (this.lastObstacleCol === -1) {
+      col = Math.floor(Math.random() * 3);
     } else {
-      const available = [0, 1, 2].filter(l => l !== this.lastObstacleLane);
-      lane = available[Math.floor(Math.random() * available.length)];
+      const available = [0,1,2].filter(c => c !== this.lastObstacleCol);
+      col = available[Math.floor(Math.random() * available.length)];
     }
-    this.lastObstacleLane = lane;
+    this.lastObstacleCol = col;
 
     const typeKey = OBSTACLE_POOL[Math.floor(Math.random() * OBSTACLE_POOL.length)];
-    const obsX = this.getLaneY(lane);  // lane X position
-    const y = -60 - Math.random() * 60;  // 从屏幕上方外生成
+    const ox = this.getColumnX(col);
+    const oy = -50;
 
     const obs = new Obstacle();
-    obs.init(x, y, lane, typeKey);
+    obs.init(ox, oy, col, typeKey);
     obs._imgMgr = this._imgMgr;
     this.totalSpawned++;
     return obs;
   }
 
   _spawnPowerUp() {
-    const lane = Math.floor(Math.random() * this.laneCount);
+    const col = Math.floor(Math.random() * 3);
     const typeKey = POWERUP_POOL[Math.floor(Math.random() * POWERUP_POOL.length)];
 
-    const puX = this.getLaneY(lane);
-    const puY = -60 - Math.random() * 50;
+    const px = this.getColumnX(col);
+    const py = -50;
+
     const pu = new PowerUp();
-    pu.init(puX, puY, lane, typeKey);
+    pu.init(px, py, col, typeKey);
     pu._imgMgr = this._imgMgr;
     return pu;
   }
 
   reset() {
     this.obstacleTimer = 0;
-    this.obstacleInterval = 1200;
+    this.obstacleInterval = 1500;
     this.powerUpTimer = 0;
-    this.powerUpInterval = 4000;
+    this.powerUpInterval = 5000;
     this.totalSpawned = 0;
-    this.difficultyLevel = 1;
-    this.lastObstacleLane = -1;
+    this.lastObstacleCol = -1;
   }
 }
 
