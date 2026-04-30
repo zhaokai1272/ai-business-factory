@@ -140,60 +140,40 @@ class Card {
   render(ctx, x, y, cellSize) {
     const size = this.getSize(cellSize);
     const half = size / 2;
-    const [bgColor, borderColor, textColor] = this.colors;
 
     ctx.save();
-
-    // 应用动画缩放
     ctx.translate(x, y);
     ctx.scale(this.animScale, this.animScale);
-    if (this.animRotation) {
-      ctx.rotate(this.animRotation);
-    }
+    if (this.animRotation) ctx.rotate(this.animRotation);
     ctx.globalAlpha = this.animAlpha;
 
-    // 阴影
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
+    // 优先真实图片
+    if (this._imgMgr) {
+      const lvl = this.level - 1;
+      if (lvl >= 0 && lvl <= 14) {
+        const fn = `${String(4+lvl).padStart(2,'0')}_card_level${String(lvl).padStart(2,'0')}.png`;
+        const img = this._imgMgr.get(fn);
+        if (img) { ctx.drawImage(img, -half, -half, size, size); ctx.restore(); return; }
+      }
+    }
 
-    // 背景圆角矩形
+    // 回退: Canvas绘制
+    const [bgColor, borderColor, textColor] = this.colors;
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
     ctx.fillStyle = bgColor;
-    this._drawRoundRect(ctx, -half, -half, size, size, size * 0.15);
-
-    // 边框
+    this._drawRoundRect(ctx, -half, -half, size, size, size*0.15);
     ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = Math.max(2, size * 0.04);
-    this._drawRoundRect(ctx, -half, -half, size, size, size * 0.15, false);
-
-    // 高光效果
-    const gradient = ctx.createLinearGradient(-half, -half, -half, half);
-    gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
-    gradient.addColorStop(0.5, 'rgba(255,255,255,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.1)');
-    ctx.fillStyle = gradient;
-    this._drawRoundRect(ctx, -half, -half, size, size, size * 0.15);
-
-    // 等级标签
-    const fontSize1 = size * 0.22;
-    ctx.font = `bold ${fontSize1}px "PingFang SC", sans-serif`;
-    ctx.fillStyle = textColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`Lv.${this.level}`, 0, -size * 0.15);
-
-    // 名称
-    const fontSize2 = size * 0.28;
-    ctx.font = `bold ${fontSize2}px "PingFang SC", sans-serif`;
-    const name = this.name.length > 4 ? this.name.slice(0, 4) + '..' : this.name;
-    ctx.fillText(name, 0, size * 0.08);
-
-    // 面值
-    const fontSize3 = size * 0.16;
-    ctx.font = `${fontSize3}px "PingFang SC", sans-serif`;
-    ctx.fillText(this.getDisplayValue(), 0, size * 0.28);
-
+    ctx.strokeStyle = borderColor; ctx.lineWidth = Math.max(2, size*0.04);
+    this._drawRoundRect(ctx, -half, -half, size, size, size*0.15, false);
+    const grad = ctx.createLinearGradient(-half,-half,-half,half);
+    grad.addColorStop(0,'rgba(255,255,255,0.3)'); grad.addColorStop(0.5,'rgba(255,255,255,0)'); grad.addColorStop(1,'rgba(0,0,0,0.1)');
+    ctx.fillStyle = grad; this._drawRoundRect(ctx, -half, -half, size, size, size*0.15);
+    ctx.font = `bold ${size*0.22}px "PingFang SC",sans-serif`; ctx.fillStyle = textColor; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`Lv.${this.level}`, 0, -size*0.15);
+    ctx.font = `bold ${size*0.28}px "PingFang SC",sans-serif`;
+    ctx.fillText(this.name.length>4?this.name.slice(0,4)+'..':this.name, 0, size*0.08);
+    ctx.font = `${size*0.16}px "PingFang SC",sans-serif`;
+    ctx.fillText(this.getDisplayValue(), 0, size*0.28);
     ctx.restore();
   }
 

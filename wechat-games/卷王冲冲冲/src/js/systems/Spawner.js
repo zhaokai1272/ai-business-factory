@@ -6,7 +6,7 @@ const { Obstacle } = require('../entities/Obstacle.js');
 const { PowerUp } = require('../entities/PowerUp.js');
 
 const OBSTACLE_POOL = ['boss', 'meeting', 'overtime', 'overtime', 'layoff'];
-const POWERUP_POOL = ['coffee', 'fish', 'salary'];
+const POWERUP_POOL = ['coffee', 'shield', 'magnet', 'speed', 'double'];
 
 class Spawner {
   constructor(canvasWidth, canvasHeight, imageManager) {

@@ -1,6 +1,5 @@
 /**
- * GameScene.js — 竖版向上跑酷
- * 3列跑道，障碍从上方来，玩家在底部躲闪
+ * GameScene.js — 竖版跑酷（全部真实图片渲染）
  */
 const Player = require('../entities/Player.js');
 const Spawner = require('../systems/Spawner.js');
@@ -14,250 +13,232 @@ class GameScene {
     this.powerUps = [];
     this.score = 0;
     this.distance = 0;
-    this.speed = 150;           // 初始速度 px/s
-    this.maxSpeed = 400;        // 最大速度
+    this.speed = 180;
+    this.maxSpeed = 450;
     this.combo = 0;
     this.lives = 3;
     this.state = 'playing';
-        this._backBtn = { x: 8, y: 6, w: 56, h: 30 };
-    this._flashTimer = 0;       // 受击闪屏
+    this._backBtn = { x: 6, y: 4, w: 50, h: 28 };
+    this._flashAlpha = 0;
+    this._scorePops = [];     // 得分弹出文字
+    this._coinsEarned = 0;
   }
 
   enter(params = {}) {
     const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    // 3列跑道 x 坐标
     const colW = w / 3;
-    const x0 = colW * 0.5;
-    const x1 = colW * 1.5;
-    const x2 = colW * 2.5;
-
-    this.player = new Player(x1, h * 0.75, [x0, x1, x2], 1);
+    this.player = new Player(colW*1.5, h*0.72, [colW*0.5, colW*1.5, colW*2.5], 1);
     this.player.game = this.game;
     this.spawner = new Spawner(w, h, this.game.imageManager);
-    this.obstacles = [];
-    this.powerUps = [];
-    this.score = 0;
-    this.distance = 0;
-    this.speed = 200;
-    this.combo = 0;
-    this.lives = this.game.gameData.lives || 3;
-    this.state = 'playing';
-      }
+    this.obstacles = []; this.powerUps = []; this._scorePops = [];
+    this.score = 0; this.distance = 0; this.speed = 180; this.combo = 0;
+    this.lives = 3; this.state = 'playing'; this._coinsEarned = 0;
+    this.game.gameData.lives = 3;
+  }
 
   update(dt) {
     if (this.state !== 'playing') return;
+    const IMG = this.game.imageManager;
 
-    // 速度递增 (每秒+5，上限600)
-    this.speed = Math.min(this.maxSpeed, this.speed + dt * 3);
+    // 速度曲线: 前30秒缓慢增长, 之后加速
+    const elapsed = this.distance / this.speed;
+    this.speed = Math.min(this.maxSpeed, 180 + elapsed * 2.5);
     this.distance += this.speed * dt;
 
-    // 背景滚动（向下 = 画面向上）
-    // 背景静态不滚动
-
-    // 玩家更新
     this.player.update(dt);
 
-    // 障碍&道具生成
+    // 生成
     const spawned = this.spawner.update(dt, this.speed);
     if (spawned.obstacles) this.obstacles.push(...spawned.obstacles);
     if (spawned.powerUps) this.powerUps.push(...spawned.powerUps);
 
-    // 障碍物移动（从上到下）+ 碰撞
-    this.obstacles = this.obstacles.filter(o => {
+    // 障碍物移动+碰撞
+    for (let i = this.obstacles.length-1; i >= 0; i--) {
+      const o = this.obstacles[i];
       o.y += this.speed * dt;
-      if (o.y > this.game.canvasHeight + o.height) {
-        this.combo = 0; // 未碰撞通过不加连击，但错过重置
-        return false;
+      if (o.y > this.game.canvasHeight + 80) { this.obstacles.splice(i,1); continue; }
+      if (!this.player.invincible && this._hitTest(o)) {
+        this._onHit(); break; // 一帧只触发一次
       }
-      if (!this.player.invincible && this._checkCollision(o)) {
-        this._onHit();
-      }
-      return true;
-    });
+    }
 
     // 道具移动+收集
-    this.powerUps = this.powerUps.filter(p => {
+    for (let i = this.powerUps.length-1; i >= 0; i--) {
+      const p = this.powerUps[i];
       p.y += this.speed * dt;
-      if (p.y > this.game.canvasHeight + p.height) return false;
-      if (this._checkCollision(p)) {
+      if (p.y > this.game.canvasHeight + 60) { this.powerUps.splice(i,1); continue; }
+      if (this._hitTest(p)) {
         this._onCollect(p);
-        return false;
+        this.powerUps.splice(i,1);
       }
-      return true;
-    });
+    }
 
-    // 分数
-    this.score = Math.floor(this.distance / 10);
-
-    // 受击闪屏衰减
-    if (this._flashTimer > 0) this._flashTimer -= dt;
+    this.score = Math.floor(this.distance / 5);
+    if (this._flashAlpha > 0) this._flashAlpha -= dt * 4;
+    // 弹出文字衰减
+    for (let i = this._scorePops.length-1; i >= 0; i--) {
+      this._scorePops[i].y -= 60*dt;
+      this._scorePops[i].life -= dt;
+      if (this._scorePops[i].life <= 0) this._scorePops.splice(i,1);
+    }
   }
 
   render(ctx) {
     const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    this._drawBackground(ctx);
-    this.obstacles.forEach(o => o.render(ctx));
-    this.powerUps.forEach(p => p.render(ctx));
+    const IMG = this.game.imageManager;
+
+    // 背景
+    this._drawBg(ctx, IMG);
+
+    // 障碍物
+    for (const o of this.obstacles) {
+      const imgKey = {boss:'12_obstacle_boss.png',meeting:'11_obstacle_meeting.png',overtime:'13_obstacle_overtime.png',layoff:'14_obstacle_deadline.png'}[o.type.type] || '13_obstacle_overtime.png';
+      const img = IMG.get(imgKey);
+      if (img) ctx.drawImage(img, o.x-o.width/2, o.y-o.height/2, o.width, o.height);
+    }
+
+    // 道具
+    for (const p of this.powerUps) {
+      const imgKey = {coffee:'16_powerup_coffee.png', shield:'17_powerup_shield.png', magnet:'18_powerup_magnet.png', speed:'19_powerup_speed.png', double:'20_powerup_double.png'}[p.type.type] || '16_powerup_coffee.png';
+      const img = IMG.get(imgKey);
+      if (img) ctx.drawImage(img, p.x-p.width/2, p.y-p.height/2, p.width, p.height);
+    }
+
+    // 玩家
     this.player.render(ctx);
-    this._drawHUD(ctx);
-    if (this.state === 'over') this._drawGameOver(ctx);
-    if (this._flashTimer > 0) {
-      ctx.fillStyle = `rgba(255,0,0,${this._flashTimer * 2})`;
-      ctx.fillRect(0, 0, w, h);
+
+    // HUD
+    this._drawHUD(ctx, IMG);
+
+    // 得分弹出
+    for (const sp of this._scorePops) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, sp.life);
+      ctx.fillStyle = sp.color;
+      ctx.font = `bold ${sp.size}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(sp.text, sp.x, sp.y);
+      ctx.restore();
     }
+
+    // 受击闪红
+    if (this._flashAlpha > 0) {
+      ctx.fillStyle = `rgba(255,0,0,${this._flashAlpha})`;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    // 游戏结束
+    if (this.state === 'over') this._drawOver(ctx);
   }
 
-  /** 静态背景 (根据速度切换场景) */
-  _drawBackground(ctx) {
+  _drawBg(ctx, IMG) {
     const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    const IMG = this.game.imageManager;
-    // 根据速度切换背景: <200=办公室, <300=地铁, <400=大厅, >=400=天台
-    let bgKey = '21_bg_office_day.png';
-    if (this.speed > 350) bgKey = '25_bg_desk.png';
-    else if (this.speed > 250) bgKey = '23_bg_subway.png';
-    else if (this.speed > 180) bgKey = '22_bg_office_night.png';
-    const bgImg = IMG ? IMG.get(bgKey) : null;
-
-    if (bgImg) {
-      ctx.drawImage(bgImg, 0, 0, w, h);
-    } else {
-      // 纯色回退
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, '#667eea');
-      grad.addColorStop(0.5, '#764ba2');
-      grad.addColorStop(1, '#667eea');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    // 跑道列分隔线
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.setLineDash([15, 25]);
-    ctx.lineWidth = 1.5;
-    for (let i = 1; i < 3; i++) {
-      const x = (w / 3) * i;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
+    let key = '21_bg_office_day.png';
+    if (this.speed > 380) key = '25_bg_desk.png';
+    else if (this.speed > 300) key = '23_bg_subway.png';
+    else if (this.speed > 220) key = '22_bg_office_night.png';
+    const img = IMG.get(key);
+    if (img) { ctx.drawImage(img, 0, 0, w, h); return; }
+    // 紧急回退
+    ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0,0,w,h);
   }
 
-  _drawHUD(ctx) {
+  _drawHUD(ctx, IMG) {
     const w = this.game.canvasWidth;
-    const IMG = this.game.imageManager;
+    // 顶栏背景
+    const panel = IMG.get('34_panel_top.png');
+    if (panel) ctx.drawImage(panel, 0, 0, w, 50);
 
-    // 顶部面板背景
-    const panel = IMG ? IMG.get('34_panel_top.png') : null;
-    if (panel) {
-      ctx.drawImage(panel, 0, 0, w, 56);
-    } else {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(0, 0, w, 56);
-    }
-
-    // 返回按钮
-    const bb = this._backBtn;
+    // 返回
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    this._drawRoundRect(ctx, bb.x, bb.y, bb.w, bb.h, 6);
-    ctx.fillStyle = '#FFF';
-    ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('← 返回', bb.x+bb.w/2, bb.y+bb.h/2+4);
+    this._roundRect(ctx, this._backBtn.x, this._backBtn.y, this._backBtn.w, this._backBtn.h, 5);
+    ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('←', this._backBtn.x+this._backBtn.w/2, this._backBtn.y+this._backBtn.h/2+4);
 
-    // 金币图标+数值
-    const coinIcon = IMG ? IMG.get('26_ui_coin.png') : null;
-    if (coinIcon) ctx.drawImage(coinIcon, w*0.25, 2, 24, 24);
-    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText(`${this.game.gameData.coins||0}`, w*0.25+28, 20);
+    // 金币
+    const coin = IMG.get('26_ui_coin.png');
+    if (coin) ctx.drawImage(coin, w*0.22, 2, 20, 20);
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`${this._coinsEarned}`, w*0.22+24, 18);
 
-    // 能量图标
-    const energyIcon = IMG ? IMG.get('27_ui_energy.png') : null;
-    if (energyIcon) ctx.drawImage(energyIcon, w*0.52, 2, 24, 24);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText(`${Math.floor(this.speed)}`, w*0.52+28, 20);
+    // 分数居中
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`${this.score}`, w/2, 36);
 
-    // 分数
-    ctx.fillStyle = '#FFF'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${this.score}`, w/2, 44);
+    // 速度
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#FFD700';
+    ctx.fillText(`${Math.floor(this.speed)}km/h`, w/2, 50);
 
     // 生命
-    ctx.textAlign = 'left'; ctx.font = '13px sans-serif'; ctx.fillStyle = '#FFF';
-    ctx.fillText(`❤️x${this.lives} 连击:${this.combo}`, 10, 75);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+    ctx.fillText(`❤x${this.lives}`, 10, 68);
+
+    // 连击
+    if (this.combo > 2) {
+      ctx.textAlign = 'right'; ctx.fillStyle = '#FFD700'; ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(`${this.combo}x`, w-10, 68);
+    }
   }
 
-  _drawGameOver(ctx) {
+  _drawOver(ctx) {
     const w = this.game.canvasWidth, h = this.game.canvasHeight;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🏢 被优化了!', w/2, h/2 - 30);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🏢 被优化了!', w/2, h/2-30);
     ctx.font = '18px sans-serif';
-    ctx.fillText(`得分: ${this.score}`, w/2, h/2 + 15);
+    ctx.fillText(`得分: ${this.score} 金币: ${this._coinsEarned}`, w/2, h/2+15);
+    ctx.font = '14px sans-serif'; ctx.fillStyle = '#aaa';
+    ctx.fillText('点击屏幕返回', w/2, h/2+45);
   }
 
-  _checkCollision(obj) {
+  _hitTest(obj) {
     const p = this.player.getHitbox();
-    const margin = 12; // 宽容碰撞边距
-    const ox = obj.x - obj.width/2 + margin;
-    const oy = obj.y - obj.height/2 + margin;
-    const ow = obj.width - margin*2;
-    const oh = obj.height - margin*2;
-    return p.x < ox + ow && p.x + p.width > ox &&
-           p.y < oy + oh && p.y + p.height > oy;
+    const m = 10;
+    const ox = obj.x - obj.width/2 + m;
+    const oy = obj.y - obj.height/2 + m;
+    return p.x < ox+obj.width-m*2 && p.x+p.width > ox &&
+           p.y < oy+obj.height-m*2 && p.y+p.height > oy;
   }
 
   _onHit() {
-    this.lives--;
-    this.combo = 0;
-    this._flashTimer = 0.15;
+    this.lives--; this.combo = 0; this._flashAlpha = 0.6;
     if (this.lives <= 0) {
       this.state = 'over';
       this.game.gameData.score = this.score;
       this.game.gameData.maxSpeed = Math.floor(this.speed);
-      setTimeout(() => this.game.switchScene('result', { score: this.score }), 1500);
+      this.game.gameData.coins += this._coinsEarned;
     } else {
-      this.player.becomeInvincible(1.5);
+      this.player.becomeInvincible(1.8);
+      this._scorePops.push({x:this.player.x, y:this.player.y-30, text:'-1❤', color:'#e74c3c', size:24, life:1.2});
     }
   }
 
-  _onCollect(powerUp) {
+  _onCollect(pu) {
     this.combo++;
-    switch (powerUp.type.type) {
-      case 'coffee': this.speed = Math.min(this.maxSpeed, this.speed + 30); break;
-      case 'fish': this.score += 50 * this.combo; break;
-      case 'salary': this.game.gameData.coins += 10; break;
-    }
+    const t = pu.type.type;
+    if (t === 'coffee') { this.speed = Math.min(this.maxSpeed, this.speed+25); this._scorePops.push({x:pu.x,y:pu.y,text:'⚡加速!',color:'#3498db',size:18,life:1}); }
+    else if (t === 'speed') { this.speed = Math.min(this.maxSpeed, this.speed+40); this._scorePops.push({x:pu.x,y:pu.y,text:'⚡⚡',color:'#3498db',size:20,life:1}); }
+    else if (t === 'shield') { this.player.becomeInvincible(3); this._scorePops.push({x:pu.x,y:pu.y,text:'🛡',color:'#2ecc71',size:22,life:1.2}); }
+    else if (t === 'magnet') { this._coinsEarned += 5; this._scorePops.push({x:pu.x,y:pu.y,text:'+5💰',color:'#FFD700',size:18,life:1}); }
+    else if (t === 'double') { this._coinsEarned += 10; this._scorePops.push({x:pu.x,y:pu.y,text:'x2💰',color:'#FFD700',size:20,life:1}); }
   }
 
-  _drawRoundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
     ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r);
     ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h);
     ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r);
-    ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
-    ctx.fill();
+    ctx.arcTo(x,y,x+r,y,r); ctx.closePath(); ctx.fill();
   }
 
   handleTouch(e) {
-    if (this.state === 'over') return;
+    if (this.state === 'over') { this.game.switchScene('menu'); return; }
     if (e.type !== 'touchstart') return;
     const tx = e.touches[0].clientX, ty = e.touches[0].clientY;
-
-    // 返回按钮
     const bb = this._backBtn;
-    if (tx >= bb.x && tx <= bb.x+bb.w && ty >= bb.y && ty <= bb.y+bb.h) {
-      this.game.switchScene('menu'); return;
-    }
-
-    // 3列：点左1/3→左列，中1/3→中列，右1/3→右列
-    const colW = this.game.canvasWidth / 3;
-    const lane = Math.min(2, Math.floor(tx / colW));
-    if (this.player.switchLane) this.player.switchLane(lane);
+    if (tx>=bb.x && tx<=bb.x+bb.w && ty>=bb.y && ty<=bb.y+bb.h) { this.game.switchScene('menu'); return; }
+    const col = Math.min(2, Math.floor(tx / (this.game.canvasWidth/3)));
+    if (this.player.switchLane) this.player.switchLane(col);
   }
 }
-
 module.exports = GameScene;
