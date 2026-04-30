@@ -15,9 +15,9 @@ const GRID_COLS = 4;
 const DRAG_THRESHOLD = 8; // px，超过此阈值视为拖拽
 
 // 掉落间隔（秒）
-const DROP_INTERVAL = 5;
+const DROP_INTERVAL = 3;  // 3秒掉落(更快节奏)
 const DROP_MIN_LEVEL = 1;
-const DROP_MAX_LEVEL = 3;
+const DROP_MAX_LEVEL = 2;  // 初期只掉低级卡,鼓励快速合成
 
 class GameScene extends Scene {
   constructor(game) {
@@ -773,9 +773,34 @@ class GameScene extends Scene {
       });
     }
 
-    // 检查是否到达满级
+    // 里程碑庆祝 (Lv5/8/10/12/15)
+    const milestones = {5:'🌟',8:'💫',10:'👑',12:'🏆',15:'🎪'};
+    if (milestones[dragCard.level]) {
+      this.popTexts.push({
+        x: dragCard.x, y: dragCard.y - 80,
+        text: `${milestones[dragCard.level]} ${dragCard.name}!`,
+        color: '#FFD700', size: 30, life: 2.5, maxLife: 2.5, alpha: 1
+      });
+      // 里程碑粒子爆发
+      for (let i=0; i<20; i++) {
+        const angle = (i/20)*Math.PI*2;
+        this.particles.push({
+          x: dragCard.x, y: dragCard.y,
+          vx: Math.cos(angle)*200, vy: Math.sin(angle)*200,
+          color: i%2===0?'#FFD700':'#FF6347', size: 3+Math.random()*4,
+          life: 1.5, maxLife: 1.5
+        });
+      }
+      // 奖励加速器
+      this.game.gameData.accelerators = (this.game.gameData.accelerators||0) + 1;
+      this.popTexts.push({
+        x: dragCard.x, y: dragCard.y - 50,
+        text: '⚡ 加速器+1', color: '#3498db', size: 18, life: 2.0, maxLife: 2.0, alpha: 1
+      });
+    }
+
+    // 满级触发成就
     if (dragCard.level >= Card.MAX_LEVEL) {
-      // 触发成就展示
       setTimeout(() => {
         this.switchTo('result', {
           highestLevel: this.highestLevel,
@@ -784,7 +809,7 @@ class GameScene extends Scene {
           totalMerges: this.totalMerges,
           playTime: this.game.idleSystem.onlineTimer
         });
-      }, 800);
+      }, 1500);
     }
   }
 
