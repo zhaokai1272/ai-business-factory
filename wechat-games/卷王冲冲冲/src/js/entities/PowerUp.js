@@ -177,16 +177,6 @@ class PowerUp {
 
     ctx.rotate(this.rotation);
 
-    const imgNames = { coffee: '16_powerup_coffee.png', fish: '16_powerup_coffee.png', salary: '16_powerup_coffee.png' };
-    const imgName = imgNames[this.type.type] || '16_powerup_coffee.png';
-    let img = null;
-    if (this._imgMgr) img = this._imgMgr.get(imgName);
-    if (img && img.complete && img.width > 0) {
-      ctx.drawImage(img, -this.width/2, -this.height/2, this.width, this.height);
-      ctx.restore();
-      return;
-    }
-
     switch (this.type.type) {
       case 'coffee':
         this.renderCoffee(ctx);

@@ -156,24 +156,6 @@ class Obstacle {
       ctx.globalAlpha = 0.5 + Math.sin(this.flashTimer * 0.05) * 0.5;
     }
 
-    // 尝试使用真实图片
-    const imgNames = {
-      boss: '12_obstacle_boss.png',
-      meeting: '11_obstacle_meeting.png',
-      overtime: '13_obstacle_overtime.png',
-      layoff: '14_obstacle_deadline.png'
-    };
-    const imgName = imgNames[this.type.type] || imgNames.overtime;
-    let img = null;
-    // Access image manager through a global-like pattern
-    if (this._imgMgr) img = this._imgMgr.get(imgName);
-    
-    if (img && img.complete && img.width > 0) {
-      ctx.drawImage(img, -this.width/2, -this.height/2, this.width, this.height);
-      ctx.restore();
-      return;
-    }
-
     switch (this.type.type) {
       case 'boss':
         this.renderBoss(ctx);
@@ -206,37 +188,25 @@ class Obstacle {
    * 绘制老板障碍 👔
    */
   renderBoss(ctx) {
-    const w = this.width;
-    const h = this.height;
-
-    // 身体 (西装)
-    ctx.fillStyle = '#c0392b';
-    ctx.fillRect(-w * 0.4, -h * 0.1, w * 0.8, h * 0.55);
-
+    const w=this.width, h=this.height;
+    // 阴影
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(0,h*0.4,w*0.35,h*0.06,0,0,Math.PI*2); ctx.fill();
+    // 身体
+    const bg=ctx.createLinearGradient(0,-h*0.2,0,h*0.3); bg.addColorStop(0,'#c0392b'); bg.addColorStop(1,'#922b21');
+    ctx.fillStyle=bg; ctx.fillRect(-w*0.35,-h*0.05,w*0.7,h*0.5);
     // 头
-    ctx.fillStyle = '#f5d6a0';
-    ctx.beginPath();
-    ctx.arc(0, -h * 0.35, w * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 领带 (金色 - 老板特权)
-    ctx.fillStyle = '#f1c40f';
-    ctx.beginPath();
-    ctx.moveTo(0, -h * 0.15);
-    ctx.lineTo(-w * 0.12, h * 0.25);
-    ctx.lineTo(w * 0.12, h * 0.25);
-    ctx.closePath();
-    ctx.fill();
-
+    ctx.fillStyle='#f5d6a0'; ctx.beginPath(); ctx.arc(0,-h*0.35,w*0.22,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#d4a574'; ctx.lineWidth=1.5; ctx.stroke();
     // 墨镜
-    ctx.fillStyle = '#000';
-    ctx.fillRect(-w * 0.2, -h * 0.42, w * 0.4, h * 0.1);
-
-    // 👔 标识
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOSS', 0, h * 0.45);
+    ctx.fillStyle='#111'; ctx.fillRect(-w*0.22,-h*0.44,w*0.44,h*0.12);
+    ctx.fillStyle='#fff'; ctx.fillRect(-w*0.18,-h*0.42,w*0.12,h*0.06);
+    ctx.fillRect(w*0.06,-h*0.42,w*0.12,h*0.06);
+    // 金链
+    ctx.strokeStyle='#f1c40f'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-w*0.12,-h*0.22); ctx.lineTo(0,-h*0.12); ctx.lineTo(w*0.12,-h*0.22); ctx.stroke();
+    // 标签
+    ctx.fillStyle='#e74c3c'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('BOSS',0,h*0.48);
   }
 
   /**
@@ -285,39 +255,18 @@ class Obstacle {
    * 绘制加班障碍 💻
    */
   renderOvertime(ctx) {
-    const w = this.width;
-    const h = this.height;
-
-    // 笔记本电脑
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(-w * 0.4, -h * 0.15, w * 0.8, h * 0.3);
-
-    // 屏幕
-    ctx.fillStyle = '#3498db';
-    ctx.fillRect(-w * 0.35, -h * 0.35, w * 0.7, h * 0.25);
-
-    // 屏幕代码行
-    ctx.fillStyle = '#2ecc71';
-    ctx.font = '6px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('while(true)', -w * 0.3, -h * 0.25);
-    ctx.fillText('{ work(); }', -w * 0.3, -h * 0.18);
-
-    // 键盘
-    ctx.fillStyle = '#7f8c8d';
-    ctx.fillRect(-w * 0.35, h * 0.08, w * 0.7, h * 0.12);
-
-    // 咖啡杯(加班伴侣)
-    ctx.fillStyle = '#6f4e37';
-    ctx.beginPath();
-    ctx.arc(w * 0.35, h * 0.05, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 💻 标识
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('996', 0, h * 0.42);
+    const w=this.width, h=this.height;
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(0,h*0.4,w*0.3,h*0.05,0,0,Math.PI*2); ctx.fill();
+    // 时钟
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,-h*0.1,w*0.35,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=2.5; ctx.stroke();
+    // 指针指向凌晨2点
+    ctx.strokeStyle='#333'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-w*0.22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*0.1,0); ctx.stroke();
+    // 标签
+    ctx.fillStyle='#e74c3c'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('加班',0,h*0.42);
   }
 
   /**

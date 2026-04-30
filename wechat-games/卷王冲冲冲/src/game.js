@@ -99,37 +99,21 @@ function gameLoop(ts) {
 wx.onShow(() => { isPaused = false; console.log('[生命周期] 恢复'); });
 wx.onHide(() => { isPaused = true; console.log('[生命周期] 暂停'); });
 
-// ==================== 图片预加载 ====================
+// ==================== 图片管理器（后台懒加载，不阻塞启动） ====================
 const ImageManager = require('./js/utils/ImageManager.js');
 game.imageManager = ImageManager;
-
-const PRELOAD_IMAGES = [
-  // 玩家角色
-  '04_player_idle.png', '05_player_run1.png', '06_player_run2.png', '07_player_run3.png',
-  '08_player_jump.png', '09_player_slide.png', '10_player_death.png',
-  // 障碍物
-  '11_obstacle_meeting.png', '12_obstacle_boss.png', '13_obstacle_overtime.png', '14_obstacle_deadline.png', '15_obstacle_printer.png',
-  // 道具
-  '16_powerup_coffee.png',
-  // 背景
-  '21_bg_office_day.png', '22_bg_office_night.png',
-  // 菜单
-  '03_menu_bg.png', '02_splash.png',
-  // UI
-  '29_btn_start.png', '30_btn_retry.png', '26_ui_coin.png', '27_ui_energy.png',
-];
+// 后台预加载（不阻塞）
+ImageManager.preload([
+  '04_player_idle.png','05_player_run1.png','06_player_run2.png','07_player_run3.png',
+  '11_obstacle_meeting.png','12_obstacle_boss.png','13_obstacle_overtime.png','14_obstacle_deadline.png',
+  '16_powerup_coffee.png','21_bg_office_day.png','03_menu_bg.png'
+]);
 
 // ==================== 启动 ====================
 function bootstrap() {
   console.log('[启动] 卷王冲冲冲 v1.0.0');
-  ImageManager.preload(PRELOAD_IMAGES,
-    (loaded, total) => { /* loading progress */ },
-    () => {
-      console.log('[图片] 预加载完成');
-      switchScene('menu');
-      lastTime = 0;
-      requestAnimationFrame(gameLoop);
-    }
-  );
+  switchScene('menu');
+  lastTime = 0;
+  requestAnimationFrame(gameLoop);
 }
 bootstrap();

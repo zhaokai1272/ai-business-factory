@@ -182,56 +182,107 @@ class Player {
 
   _drawBody(ctx, ox, oy, isTrail) {
     const w = this.width, h = this.height;
-
     if (isTrail) {
-      // 残影用半透明简化绘制
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(ox - w * 0.3, oy - h * 0.1, w * 0.6, h * 0.5);
-      ctx.fillStyle = '#f5d6a0';
-      ctx.beginPath(); ctx.arc(ox, oy - h * 0.35, w * 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.25;
+      this._drawCharacter(ctx, ox, oy, w, h, true);
       ctx.globalAlpha = 1;
       return;
     }
-
-    // 尝试使用真实图片
-    const imgMgr = (typeof this.game !== 'undefined' && this.game.imageManager) ? this.game.imageManager : null;
-    let imgName = '05_player_run1.png'; // default
-    if (this.animFrame === 0) imgName = '05_player_run1.png';
-    else if (this.animFrame === 1) imgName = '06_player_run2.png';
-    else if (this.animFrame === 2) imgName = '07_player_run3.png';
-    else imgName = '05_player_run1.png';
-
-    const img = imgMgr ? imgMgr.get(imgName) : null;
-    
-    if (img && img.complete && img.width > 0) {
-      // 用真实图片绘制
-      const iw = w * 1.8, ih = h * 1.8;
-      ctx.drawImage(img, ox - iw/2, oy - ih/2 + 5, iw, ih);
-    } else {
-      // 回退：Canvas绘制
-      ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(ox - w * 0.3, oy - h * 0.1, w * 0.6, h * 0.5);
-      ctx.fillStyle = '#f5d6a0';
-      ctx.beginPath(); ctx.arc(ox, oy - h * 0.35, w * 0.2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(ox, oy - h * 0.15); ctx.lineTo(ox - w * 0.1, oy + h * 0.2);
-      ctx.lineTo(ox + w * 0.1, oy + h * 0.2); ctx.closePath(); ctx.fill();
-      const legOff = Math.sin((this.animFrame * Math.PI) / 2) * h * 0.15;
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(ox - w * 0.15, oy + h * 0.35, w * 0.12, h * 0.25 + legOff);
-      ctx.fillRect(ox + w * 0.03, oy + h * 0.35, w * 0.12, h * 0.25 - legOff);
-    }
+    this._drawCharacter(ctx, ox, oy, w, h, false);
 
     // 无敌护盾
     if (this.invincible) {
-      ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
       ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(ox, oy, w * 0.7, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(ox, oy, w * 0.8, 0, Math.PI * 2); ctx.stroke();
     }
+  }
+
+  /** 高质量角色绘制 */
+  _drawCharacter(ctx, cx, cy, w, h, isGhost) {
+    const alpha = isGhost ? 0.4 : 1;
+    ctx.save();
+    if (isGhost) ctx.globalAlpha = 0.35;
+
+    // 阴影
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + h*0.45, w*0.35, h*0.08, 0, 0, Math.PI*2); ctx.fill();
+
+    // 身体(西装+衬衫)
+    const bodyGrad = ctx.createLinearGradient(cx, cy-h*0.2, cx, cy+h*0.3);
+    bodyGrad.addColorStop(0, '#34495e'); bodyGrad.addColorStop(1, '#2c3e50');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(cx-w*0.25, cy-h*0.05); ctx.lineTo(cx-w*0.35, cy+h*0.3);
+    ctx.quadraticCurveTo(cx-w*0.35, cy+h*0.4, cx-w*0.1, cy+h*0.4);
+    ctx.lineTo(cx+w*0.1, cy+h*0.4);
+    ctx.quadraticCurveTo(cx+w*0.35, cy+h*0.4, cx+w*0.35, cy+h*0.3);
+    ctx.lineTo(cx+w*0.25, cy-h*0.05);
+    ctx.quadraticCurveTo(cx, cy-h*0.5, cx-w*0.25, cy-h*0.05);
+    ctx.fill();
+    ctx.strokeStyle = '#1a252f'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // 领带
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-h*0.12); ctx.lineTo(cx-w*0.08, cy+h*0.15);
+    ctx.lineTo(cx-w*0.02, cy+h*0.22); ctx.lineTo(cx+w*0.02, cy+h*0.22);
+    ctx.lineTo(cx+w*0.08, cy+h*0.15); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.moveTo(cx, cy-h*0.12); ctx.lineTo(cx-w*0.04, cy+h*0.08);
+    ctx.lineTo(cx+w*0.04, cy+h*0.08); ctx.closePath(); ctx.fill();
+
+    // 头
+    ctx.fillStyle = '#f5d6a0';
+    ctx.beginPath(); ctx.arc(cx, cy-h*0.3, w*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#d4a574'; ctx.lineWidth = 1; ctx.stroke();
+
+    // 头发
+    ctx.fillStyle = '#2c3e50';
+    ctx.beginPath(); ctx.arc(cx, cy-h*0.38, w*0.23, Math.PI, 0); ctx.fill();
+
+    // 黑框眼镜
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx-w*0.08, cy-h*0.32, w*0.06, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx+w*0.08, cy-h*0.32, w*0.06, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-w*0.02, cy-h*0.32); ctx.lineTo(cx+w*0.02, cy-h*0.32); ctx.stroke();
+
+    // 嘴
+    ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(cx, cy-h*0.22, w*0.06, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke();
+
+    // 腿+动画
+    const legOff = Math.sin((this.animFrame*Math.PI)/2) * h*0.12;
+    ctx.fillStyle = '#1a1a2e';
+    // 左腿
+    ctx.beginPath();
+    ctx.moveTo(cx-w*0.1, cy+h*0.3); ctx.lineTo(cx-w*0.15, cy+h*0.52+legOff);
+    ctx.lineTo(cx-w*0.02, cy+h*0.52+legOff); ctx.lineTo(cx+w*0.02, cy+h*0.3);
+    ctx.closePath(); ctx.fill();
+    // 右腿
+    ctx.beginPath();
+    ctx.moveTo(cx+w*0.02, cy+h*0.3); ctx.lineTo(cx+w*0.15, cy+h*0.52-legOff);
+    ctx.lineTo(cx+w*0.22, cy+h*0.52-legOff); ctx.lineTo(cx+w*0.1, cy+h*0.3);
+    ctx.closePath(); ctx.fill();
+
+    // 鞋
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(cx-w*0.18, cy+h*0.48+legOff, w*0.2, h*0.08);
+    ctx.fillRect(cx+w*0.1, cy+h*0.48-legOff, w*0.16, h*0.08);
+
+    // 公文包
+    ctx.fillStyle = '#795548';
+    ctx.fillRect(cx+w*0.2, cy+h*0.05, w*0.18, h*0.2);
+    ctx.fillStyle = '#5d4037'; ctx.fillRect(cx+w*0.2, cy+h*0.05, w*0.18, h*0.04);
+
+    // 黑眼圈(加班人特征)
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.ellipse(cx-w*0.08, cy-h*0.34, w*0.05, h*0.03, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+w*0.08, cy-h*0.34, w*0.05, h*0.03, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();
   }
 
   reset() {

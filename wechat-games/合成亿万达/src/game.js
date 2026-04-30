@@ -109,29 +109,23 @@ function gameLoop(ts) {
 wx.onShow(() => { isPaused = false; console.log('[生命周期] 恢复'); });
 wx.onHide(() => { isPaused = true; console.log('[生命周期] 暂停'); });
 
-// ==================== 图片预加载 ====================
+// ==================== 图片管理器(后台懒加载,不阻塞启动) ====================
 const ImageManager = require('./js/utils/ImageManager.js');
 game.imageManager = ImageManager;
-
-const PRELOAD = [
-  '03_menu_bg.png', '37_bg_board.png',
+ImageManager.preload([
+  '03_menu_bg.png','37_bg_board.png',
   '04_card_level00.png','05_card_level01.png','06_card_level02.png',
   '07_card_level03.png','08_card_level04.png','09_card_level05.png',
   '10_card_level06.png','11_card_level07.png','12_card_level08.png',
   '13_card_level09.png','14_card_level10.png','15_card_level11.png',
   '16_card_level12.png','17_card_level13.png','18_card_level14.png',
-  '19_merge_effect_normal.png','20_merge_effect_super.png',
-  '44_fx_level_up.png','46_fx_idle_coins.png',
-];
+]);
 
 // ==================== 启动 ====================
 function bootstrap() {
   console.log('[启动] 合成亿万达 v1.0.0');
-  ImageManager.preload(PRELOAD, null, () => {
-    console.log('[图片] 预加载完成');
-    switchScene('menu');
-    lastTime = 0;
-    requestAnimationFrame(gameLoop);
-  });
+  switchScene('menu');
+  lastTime = 0;
+  requestAnimationFrame(gameLoop);
 }
 bootstrap();
