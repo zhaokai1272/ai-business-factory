@@ -133,6 +133,7 @@ class GameScene extends Scene {
       const pos = positions[i];
       const level = DROP_MIN_LEVEL + Math.floor(Math.random() * (DROP_MAX_LEVEL - DROP_MIN_LEVEL + 1));
       const card = new Card(level);
+      card._imgMgr = this.game.imageManager;
       card.setGridPosition(pos.row, pos.col);
       this.grid[pos.row][pos.col] = card;
       this.cards.push(card);
@@ -198,6 +199,7 @@ class GameScene extends Scene {
     const actualLevel = Math.random() < 0.1 ? 4 : level;
 
     const card = new Card(actualLevel);
+    card._imgMgr = this.game.imageManager;
     card.setGridPosition(pos.row, pos.col);
     this.grid[pos.row][pos.col] = card;
     this.cards.push(card);
@@ -322,9 +324,15 @@ class GameScene extends Scene {
     const w = this.width;
     const h = this.height;
 
-    // 背景
-    ctx.fillStyle = '#0d0d1a';
-    ctx.fillRect(0, 0, w, h);
+    // 背景（优先图片）
+    const imgMgr = this.game.imageManager;
+    const bgImg = imgMgr ? imgMgr.get('37_bg_board.png') : null;
+    if (bgImg && bgImg.complete && bgImg.width > 0) {
+      ctx.drawImage(bgImg, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#0d0d1a';
+      ctx.fillRect(0, 0, w, h);
+    }
 
     // 网格背景
     this._renderGridBackground();

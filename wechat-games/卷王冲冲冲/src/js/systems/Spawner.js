@@ -20,11 +20,11 @@ class Spawner {
 
     // 生成计时 (ms)
     this.obstacleTimer = 0;
-    this.obstacleInterval = 1500;
-    this.obstacleMinInterval = 400;
+    this.obstacleInterval = 1200;
+    this.obstacleMinInterval = 500;
     this.powerUpTimer = 0;
-    this.powerUpInterval = 5000;
-    this.powerUpMinInterval = 2000;
+    this.powerUpInterval = 4000;
+    this.powerUpMinInterval = 2500;
 
     this.totalSpawned = 0;
     this.difficultyLevel = 1;
@@ -46,8 +46,8 @@ class Spawner {
 
     // 难度递增
     this.difficultyLevel = 1 + Math.floor(this.totalSpawned / 10);
-    this.obstacleInterval = Math.max(this.obstacleMinInterval, 1500 - (this.difficultyLevel - 1) * 80);
-    this.powerUpInterval = Math.max(this.powerUpMinInterval, 5000 - (this.difficultyLevel - 1) * 150);
+    this.obstacleInterval = Math.max(this.obstacleMinInterval, 1200 - (this.difficultyLevel - 1) * 60);
+    this.powerUpInterval = Math.max(this.powerUpMinInterval, 4000 - (this.difficultyLevel - 1) * 120);
 
     // 障碍物生成
     this.obstacleTimer += dtMs;
@@ -81,8 +81,8 @@ class Spawner {
     this.lastObstacleLane = lane;
 
     const typeKey = OBSTACLE_POOL[Math.floor(Math.random() * OBSTACLE_POOL.length)];
-    const y = this.getLaneY(lane);
-    const x = this.canvasWidth + 60 + Math.random() * 100;
+    const obsX = this.getLaneY(lane);  // lane X position
+    const y = -60 - Math.random() * 60;  // 从屏幕上方外生成
 
     const obs = new Obstacle();
     obs.init(x, y, lane, typeKey);
@@ -95,20 +95,19 @@ class Spawner {
     const lane = Math.floor(Math.random() * this.laneCount);
     const typeKey = POWERUP_POOL[Math.floor(Math.random() * POWERUP_POOL.length)];
 
-    const y = this.getLaneY(lane);
-    const x = this.canvasWidth + 60 + Math.random() * 80;
-
+    const puX = this.getLaneY(lane);
+    const puY = -60 - Math.random() * 50;
     const pu = new PowerUp();
-    pu.init(x, y, lane, typeKey);
+    pu.init(puX, puY, lane, typeKey);
     pu._imgMgr = this._imgMgr;
     return pu;
   }
 
   reset() {
     this.obstacleTimer = 0;
-    this.obstacleInterval = 1500;
+    this.obstacleInterval = 1200;
     this.powerUpTimer = 0;
-    this.powerUpInterval = 5000;
+    this.powerUpInterval = 4000;
     this.totalSpawned = 0;
     this.difficultyLevel = 1;
     this.lastObstacleLane = -1;

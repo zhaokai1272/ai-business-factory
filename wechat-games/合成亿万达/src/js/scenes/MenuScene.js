@@ -149,13 +149,19 @@ class MenuScene extends Scene {
     const w = this.width;
     const h = this.height;
 
-    // 背景渐变
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#0a0a2e');
-    bgGrad.addColorStop(0.5, '#1a0a3e');
-    bgGrad.addColorStop(1, '#0a1a2e');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, w, h);
+    // 背景（优先真实图片）
+    const imgMgr = this.game.imageManager;
+    const bgImg = imgMgr ? imgMgr.get('03_menu_bg.png') : null;
+    if (bgImg && bgImg.complete && bgImg.width > 0) {
+      ctx.drawImage(bgImg, 0, 0, w, h);
+    } else {
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, '#0a0a2e');
+      bgGrad.addColorStop(0.5, '#1a0a3e');
+      bgGrad.addColorStop(1, '#0a1a2e');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+    }
 
     // 星星
     for (const s of this.stars) {

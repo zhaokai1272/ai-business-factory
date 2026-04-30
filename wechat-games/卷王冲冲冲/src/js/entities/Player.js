@@ -17,10 +17,10 @@ class Player {
     this.game = null; // set by GameScene
     
     // 跑道系统
-    this.laneYs = laneYs;       // 三条跑道Y坐标数组
+    this.laneXs = laneYs;       // 三条跑道X坐标数组(兼容旧名)
     this.lane = initialLane;    // 当前跑道索引
     this.laneCount = laneYs.length;
-    this.laneHeight = laneYs[1] - laneYs[0]; // 跑道间距
+    this.laneWidth = laneYs[1] - laneYs[0]; // 跑道间距
     
     // 玩家尺寸
     this.width = 50;
@@ -67,7 +67,7 @@ class Player {
 
   /** 获取指定跑道索引的Y坐标 */
   getLaneY(laneIndex) {
-    return this.laneYs[laneIndex];
+    return this.laneXs[laneIndex];
   }
 
   /** 切换到指定跑道 */
@@ -76,8 +76,8 @@ class Player {
     if (targetLane === this.lane && !this.switching) return;
 
     this.switching = true;
-    this.switchFromY = this.y;
-    this.switchToY = this.laneYs[targetLane];
+    this.switchFromX = this.x;
+    this.switchToX = this.laneXs[targetLane];
     this.switchTimer = 0;
     this.lane = targetLane;
   }
@@ -102,14 +102,16 @@ class Player {
   update(dt) {
     const dtMs = dt * 1000; // 转为毫秒
 
-    // 跑道切换动画
+    // 跑道切换动画(水平)
     if (this.switching) {
       this.switchTimer += dtMs;
       const progress = Math.min(this.switchTimer / this.switchDuration, 1);
-      this.y = this.switchFromY + (this.switchToY - this.switchFromY) * progress;
+      // easeInOut
+      const t = progress < 0.5 ? 2*progress*progress : -1+(4-2*progress)*progress;
+      this.x = this.switchFromX + (this.switchToX - this.switchFromX) * t;
       if (progress >= 1) {
         this.switching = false;
-        this.y = this.switchToY;
+        this.x = this.switchToX;
       }
     }
 
@@ -234,7 +236,7 @@ class Player {
 
   reset() {
     this.lane = 1;
-    this.y = this.laneYs[1];
+    this.x = this.laneXs[1];
     this.switching = false;
     this.invincible = false;
     this.invincibleTimer = 0;
